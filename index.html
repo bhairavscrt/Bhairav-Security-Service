@@ -385,6 +385,7 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
   <div class="nav-item" id="nav-alerts" onclick="showScreen('alerts')"><span class="nav-ico">🔔</span><span class="nav-lbl">Alerts</span></div>
   <div class="nav-item" id="nav-permissions" onclick="showScreen('permissions')"><span class="nav-ico">🔐</span><span class="nav-lbl">Users</span></div>
   <div class="nav-item" id="nav-backup" onclick="showScreen('backup')"><span class="nav-ico">💾</span><span class="nav-lbl">Backup</span></div>
+  <div class="nav-item" id="nav-uniform" onclick="showScreen('uniform')"><span class="nav-ico">👕</span><span class="nav-lbl">Uniform</span></div>
 </div>
 
 <!-- ─── DASHBOARD ─── -->
@@ -1294,7 +1295,7 @@ const DEFAULT_USERS=[{name:'Owner',username:'owner',password:'bhairav@owner',rol
 function saveDB(){
   try{
     localStorage.setItem(DB_KEY,JSON.stringify({
-      employees,users,contracts,salaries,salesBills,purchaseBills,alertsList,ownerContact,attendanceLogs
+      employees,users,contracts,salaries,salesBills,purchaseBills,alertsList,ownerContact,attendanceLogs,uniformStock,uniformIssues
     }));
   }catch(e){console.warn('DB save failed',e);}
   // Auto-push to Drive on every change (debounced, silent)
@@ -1376,6 +1377,8 @@ function loadDB(){
     if(db.alertsList)alertsList=db.alertsList;
     if(db.ownerContact)ownerContact=Object.assign(ownerContact,db.ownerContact);
     if(db.attendanceLogs)attendanceLogs=db.attendanceLogs;
+    if(db.uniformStock)uniformStock=db.uniformStock;
+    if(db.uniformIssues)uniformIssues=db.uniformIssues;
     // Ensure owner always exists
     if(!users.find(u=>u.username==='owner'))users.unshift(DEFAULT_USERS[0]);
   }catch(e){console.warn('DB load failed',e);}
@@ -1386,6 +1389,10 @@ let users=[...DEFAULT_USERS];
 let contracts=[];
 let salaries=[];
 let salesBills=[];
+const UNIFORM_SIZES=['30','32','34','36','38','40','42'];
+const UNIFORM_ITEMS=['Uniform','Shoes','Cap'];
+let uniformStock={};// {item_size: qty}
+let uniformIssues=[];// [{empId,empName,date,items:[{item,size,pairs}]}]
 let purchaseBills=[];
 let alertsList=[];
 let attendanceLogs=[];
@@ -1527,6 +1534,7 @@ function showScreen(id){
   if(id==='alerts'){renderAlerts();loadContactFields();setTimeout(checkAndTriggerAlerts,500);}
   if(id==='backup')initBackupScreen();
   if(id==='permissions')renderUsers();
+  if(id==='uniform')renderUniformStock();
 }
 
 // ═══ DASHBOARD ═══
@@ -1748,6 +1756,193 @@ function printIDCard(){
   const w=window.open('','_blank');
   w.document.write(`<html><head><title>ID Card</title><style>body{margin:0;padding:20px;background:#f0f0f0;display:flex;justify-content:center;}@media print{body{background:#fff;padding:0;}}</style></head><body>${c.outerHTML}<script>window.onload=function(){window.print();}<\/script></body></html>`);
   w.document.close();
+}
+
+// ═══ UNIFORM FUNCTIONS ═══
+function uTab(t){
+  ['stock','issue','history'].forEach(x=>{
+    document.getElementById('upanel-'+x).style.display=x===t?'':'none';
+    const btn=document.getElementById('utab-'+x);
+    btn.className=x===t?'btn btn-primary btn-sm':'btn btn-outline btn-sm';
+    btn.style.flex='1';
+  });
+  if(t==='issue'){uPopulateEmpSelect();uBuildIssueItems();}
+  if(t==='history')renderUniformHistory();
+  if(t==='stock')renderUniformStock();
+}
+
+function uUpdateSizeVis(){
+  const item=document.getElementById('us-item').value;
+  document.getElementById('us-size-wrap').style.display=item==='Cap'?'none':'';
+}
+
+function addUniformStock(){
+  const item=document.getElementById('us-item').value;
+  const size=item==='Cap'?'OneSize':document.getElementById('us-size').value;
+  const qty=parseInt(document.getElementById('us-qty').value)||0;
+  if(qty<=0){showToast('Enter valid quantity!');return;}
+  const key=item+'_'+size;
+  uniformStock[key]=(uniformStock[key]||0)+qty;
+  saveDB();renderUniformStock();
+  document.getElementById('us-qty').value='';
+  showToast('✅ Stock added: '+item+(size!=='OneSize'?' size '+size:'')+' x'+qty);
+}
+
+function renderUniformStock(){
+  const el=document.getElementById('uniform-stock-table');if(!el)return;
+  // Calculate issued totals
+  const issued={};
+  uniformIssues.forEach(rec=>{
+    (rec.items||[]).forEach(it=>{
+      const k=it.item+'_'+(it.size||'OneSize');
+      issued[k]=(issued[k]||0)+(parseInt(it.pairs)||1);
+    });
+  });
+  const rows=[];
+  // Uniform by size
+  UNIFORM_SIZES.forEach(s=>{
+    const k='Uniform_'+s;
+    const bought=uniformStock[k]||0;
+    const give=issued[k]||0;
+    const bal=bought-give;
+    if(bought>0||give>0) rows.push({item:'Uniform',size:s,bought,give,bal});
+  });
+  // Shoes by size
+  UNIFORM_SIZES.forEach(s=>{
+    const k='Shoes_'+s;
+    const bought=uniformStock[k]||0;
+    const give=issued[k]||0;
+    const bal=bought-give;
+    if(bought>0||give>0) rows.push({item:'Shoes',size:s,bought,give,bal});
+  });
+  // Cap
+  const kc='Cap_OneSize';
+  const bc=uniformStock[kc]||0,gc=issued[kc]||0;
+  if(bc>0||gc>0) rows.push({item:'Cap',size:'—',bought:bc,give:gc,bal:bc-gc});
+
+  if(rows.length===0){el.innerHTML='<div style="text-align:center;color:var(--text3);padding:20px;">No stock added yet. Add stock above.</div>';return;}
+  el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12px;">
+    <thead><tr style="background:var(--saffron-glow);">
+      <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border2);">Item</th>
+      <th style="padding:8px;text-align:center;border-bottom:1px solid var(--border2);">Size</th>
+      <th style="padding:8px;text-align:center;border-bottom:1px solid var(--border2);">Bought</th>
+      <th style="padding:8px;text-align:center;border-bottom:1px solid var(--border2);">Issued</th>
+      <th style="padding:8px;text-align:center;border-bottom:1px solid var(--border2);">Balance</th>
+    </tr></thead>
+    <tbody>${rows.map(r=>`<tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:7px 8px;font-weight:600;">${r.item}</td>
+      <td style="padding:7px 8px;text-align:center;">${r.size}</td>
+      <td style="padding:7px 8px;text-align:center;color:#16A34A;font-weight:700;">${r.bought}</td>
+      <td style="padding:7px 8px;text-align:center;color:#DC2626;font-weight:700;">${r.give}</td>
+      <td style="padding:7px 8px;text-align:center;font-weight:700;color:${r.bal<0?'#DC2626':r.bal===0?'#6B7280':'#1D4ED8'};">${r.bal}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function uPopulateEmpSelect(){
+  const sel=document.getElementById('ui-emp');if(!sel)return;
+  sel.innerHTML=employees.filter(e=>e.status==='Current').map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+}
+
+function uBuildIssueItems(){
+  const wrap=document.getElementById('ui-items-wrap');if(!wrap)return;
+  wrap.innerHTML=`
+  <div style="overflow-x:auto;">
+  <table style="width:100%;border-collapse:collapse;font-size:12px;">
+    <thead><tr style="background:var(--saffron-glow);">
+      <th style="padding:8px;text-align:left;">Item</th>
+      <th style="padding:8px;text-align:center;">Size</th>
+      <th style="padding:8px;text-align:center;">Pairs/Qty</th>
+      <th style="padding:8px;text-align:center;">Issue?</th>
+    </tr></thead>
+    <tbody>
+      ${UNIFORM_SIZES.map(s=>`
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:6px 8px;">👕 Uniform</td>
+        <td style="padding:6px 8px;text-align:center;font-weight:700;">${s}</td>
+        <td style="padding:6px 8px;text-align:center;"><input type="number" id="uiq-Uniform_${s}" min="0" value="0" style="width:50px;text-align:center;border:1px solid var(--border);border-radius:6px;padding:3px;"></td>
+        <td style="padding:6px 8px;text-align:center;"><input type="checkbox" id="uic-Uniform_${s}"></td>
+      </tr>`).join('')}
+      ${UNIFORM_SIZES.map(s=>`
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:6px 8px;">👟 Shoes</td>
+        <td style="padding:6px 8px;text-align:center;font-weight:700;">${s}</td>
+        <td style="padding:6px 8px;text-align:center;"><input type="number" id="uiq-Shoes_${s}" min="0" value="0" style="width:50px;text-align:center;border:1px solid var(--border);border-radius:6px;padding:3px;"></td>
+        <td style="padding:6px 8px;text-align:center;"><input type="checkbox" id="uic-Shoes_${s}"></td>
+      </tr>`).join('')}
+      <tr>
+        <td style="padding:6px 8px;">🧢 Cap</td>
+        <td style="padding:6px 8px;text-align:center;">—</td>
+        <td style="padding:6px 8px;text-align:center;"><input type="number" id="uiq-Cap_OneSize" min="0" value="0" style="width:50px;text-align:center;border:1px solid var(--border);border-radius:6px;padding:3px;"></td>
+        <td style="padding:6px 8px;text-align:center;"><input type="checkbox" id="uic-Cap_OneSize"></td>
+      </tr>
+    </tbody>
+  </table></div>`;
+  // Auto-check when qty entered
+  ['Uniform','Shoes'].forEach(item=>{
+    UNIFORM_SIZES.forEach(s=>{
+      const qEl=document.getElementById('uiq-'+item+'_'+s);
+      if(qEl)qEl.oninput=function(){if(parseInt(this.value)>0)document.getElementById('uic-'+item+'_'+s).checked=true;};
+    });
+  });
+  const cq=document.getElementById('uiq-Cap_OneSize');
+  if(cq)cq.oninput=function(){if(parseInt(this.value)>0)document.getElementById('uic-Cap_OneSize').checked=true;};
+}
+
+function issueUniform(){
+  const empId=document.getElementById('ui-emp').value;
+  const emp=employees.find(e=>e.id===empId);if(!emp){showToast('Select employee!');return;}
+  const date=document.getElementById('ui-date').value||new Date().toISOString().split('T')[0];
+  const items=[];
+  ['Uniform','Shoes'].forEach(item=>{
+    UNIFORM_SIZES.forEach(s=>{
+      const cb=document.getElementById('uic-'+item+'_'+s);
+      const qty=parseInt(document.getElementById('uiq-'+item+'_'+s)?.value)||0;
+      if(cb&&cb.checked&&qty>0) items.push({item,size:s,pairs:qty});
+    });
+  });
+  const capCb=document.getElementById('uic-Cap_OneSize');
+  const capQty=parseInt(document.getElementById('uiq-Cap_OneSize')?.value)||0;
+  if(capCb&&capCb.checked&&capQty>0) items.push({item:'Cap',size:'OneSize',pairs:capQty});
+  if(items.length===0){showToast('Check at least one item to issue!');return;}
+  uniformIssues.push({empId,empName:emp.name,date,items});
+  saveDB();
+  showToast('✅ Uniform issued to '+emp.name);
+  uTab('history');
+}
+
+function renderUniformHistory(){
+  const el=document.getElementById('uniform-history-list');if(!el)return;
+  const q=(document.getElementById('uh-search')?.value||'').toLowerCase();
+  const filtered=uniformIssues.filter(r=>!q||r.empName.toLowerCase().includes(q));
+  if(filtered.length===0){el.innerHTML='<div style="text-align:center;color:var(--text3);padding:20px;">No uniform issues recorded yet.</div>';return;}
+  el.innerHTML=[...filtered].reverse().map((r,i)=>`
+  <div class="card" style="margin-bottom:10px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div>
+        <div style="font-weight:700;font-size:14px;">👷 ${r.empName}</div>
+        <div style="font-size:11px;color:var(--text3);">📅 ${r.date}</div>
+      </div>
+      <button class="del-btn" onclick="deleteUniformIssue(${uniformIssues.length-1-i})">🗑</button>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="background:var(--saffron-glow);">
+        <th style="padding:5px 8px;text-align:left;">Item</th>
+        <th style="padding:5px 8px;text-align:center;">Size</th>
+        <th style="padding:5px 8px;text-align:center;">Pairs/Qty</th>
+      </tr></thead>
+      <tbody>${r.items.map(it=>`<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:5px 8px;">${it.item==='Uniform'?'👕':it.item==='Shoes'?'👟':'🧢'} ${it.item}</td>
+        <td style="padding:5px 8px;text-align:center;font-weight:700;">${it.size==='OneSize'?'—':it.size}</td>
+        <td style="padding:5px 8px;text-align:center;font-weight:700;color:var(--saffron-dark);">${it.pairs}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+  </div>`).join('');
+}
+
+function deleteUniformIssue(i){
+  if(!confirm('Delete this uniform issue record?'))return;
+  uniformIssues.splice(i,1);saveDB();renderUniformHistory();showToast('Deleted.');
 }
 
 function checkBirthdays(){
@@ -4466,6 +4661,57 @@ window.saveDB = saveDB;      // keep window.saveDB in sync
 })();
 
 </script>
+
+<!-- ═══ UNIFORM SCREEN ═══ -->
+<div class="screen" id="screen-uniform">
+  <div class="screen-header"><span class="screen-title">👕 Uniform Balance Sheet</span></div>
+  <div style="padding:12px;max-width:700px;margin:0 auto;">
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button id="utab-stock" class="btn btn-primary btn-sm" style="flex:1;" onclick="uTab('stock')">📦 Stock</button>
+      <button id="utab-issue" class="btn btn-outline btn-sm" style="flex:1;" onclick="uTab('issue')">➕ Issue</button>
+      <button id="utab-history" class="btn btn-outline btn-sm" style="flex:1;" onclick="uTab('history')">📋 History</button>
+    </div>
+    <div id="upanel-stock">
+      <div class="card" style="margin-bottom:12px;">
+        <div style="font-weight:700;font-size:14px;margin-bottom:10px;color:var(--saffron-dark);">➕ Add Stock Purchase</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+          <div><label class="form-label">Item</label>
+            <select id="us-item" class="form-input" onchange="uUpdateSizeVis()">
+              <option>Uniform</option><option>Shoes</option><option>Cap</option>
+            </select>
+          </div>
+          <div id="us-size-wrap"><label class="form-label">Size</label>
+            <select id="us-size" class="form-input">
+              <option>30</option><option>32</option><option>34</option><option>36</option><option>38</option><option>40</option><option>42</option>
+            </select>
+          </div>
+          <div><label class="form-label">Qty Purchased</label>
+            <input id="us-qty" type="number" class="form-input" min="1" placeholder="e.g. 10">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="addUniformStock()">✅ Add to Stock</button>
+      </div>
+      <div class="card">
+        <div style="font-weight:700;font-size:14px;margin-bottom:10px;color:var(--saffron-dark);">📦 Current Stock Balance</div>
+        <div id="uniform-stock-table"></div>
+      </div>
+    </div>
+    <div id="upanel-issue" style="display:none;">
+      <div class="card">
+        <div style="font-weight:700;font-size:14px;margin-bottom:10px;color:var(--saffron-dark);">👕 Issue Uniform to Employee</div>
+        <div style="margin-bottom:8px;"><label class="form-label">Employee</label><select id="ui-emp" class="form-input"></select></div>
+        <div style="margin-bottom:8px;"><label class="form-label">Date</label><input id="ui-date" type="date" class="form-input"></div>
+        <div style="font-weight:600;font-size:13px;margin:10px 0 6px;color:var(--text2);">Items to Issue:</div>
+        <div id="ui-items-wrap"></div>
+        <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="issueUniform()">✅ Issue Uniform</button>
+      </div>
+    </div>
+    <div id="upanel-history" style="display:none;">
+      <div style="margin-bottom:8px;"><input id="uh-search" class="form-input" placeholder="🔍 Search employee..." oninput="renderUniformHistory()"></div>
+      <div id="uniform-history-list"></div>
+    </div>
+  </div>
+</div>
 
 <!-- Alert Popup Modal -->
 <div class="alert-popup-overlay hidden" id="alert-popup">
