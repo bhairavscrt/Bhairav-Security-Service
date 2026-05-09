@@ -1683,7 +1683,17 @@ function saveEmployee(){
     empData.id='EMP-'+String(Date.now()).slice(-5);
     empData.bg=colors[employees.length%colors.length];
     employees.push(empData);
-    showToast('Employee '+name+' added!');
+    // Auto-create login for new employee
+    const phone=document.getElementById('nf-phone').value.trim();
+    const autoUser=phone||empData.id;
+    const autoPass='BSS@'+String(Date.now()).slice(-4);
+    const uColors=['#1D4ED8','#16A34A','#D97706','#7C3AED','#DC2626','#FF6B00'];
+    if(!users.find(u=>u.username===autoUser)){
+      users.push({name,username:autoUser,password:autoPass,role:'guard',time:'any',av:name.substring(0,2).toUpperCase(),bg:uColors[users.length%uColors.length],autoCreated:true});
+      showToast('✅ '+name+' added! Login: '+autoUser+' / '+autoPass);
+    } else {
+      showToast('Employee '+name+' added! (Login already exists)');
+    }
   }
   renderEmpTable();
   document.getElementById('add-emp-section').style.display='none';
@@ -3098,7 +3108,7 @@ function renderUsers(){
       <div class="perm-av" style="background:${u.bg};">${u.av}</div>
       <div style="flex:1;">
         <div style="font-size:13px;font-weight:600;">${u.name}</div>
-        <div style="font-size:10px;color:var(--text3);">@${u.username} · ${u.time||'any'} access</div>
+        <div style="font-size:10px;color:var(--text3);">@${u.username} · ${u.time||'any'} access ${u.autoCreated?'<span style="background:#FFF3E0;color:#FF6B00;border:1px solid #FFD4A8;border-radius:4px;padding:1px 5px;font-size:9px;">AUTO</span>':''}</div>
         ${currentUser.role==='owner'?`<div style="font-size:10px;color:var(--text3);margin-top:2px;">Password: <span id="pwd-${i}" style="font-family:monospace;">••••••</span> <button onclick="togglePwd(${i})" style="font-size:9px;background:var(--saffron-glow);color:var(--saffron-dark);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;cursor:pointer;">Show</button></div>`:''}
       </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;">
