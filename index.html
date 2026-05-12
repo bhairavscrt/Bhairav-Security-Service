@@ -445,9 +445,9 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
     <div class="filter-bar">
       <input type="text" id="f-search" placeholder="Search name / ID / site…" oninput="renderEmpTable()"/>
       <select id="f-status" onchange="renderEmpTable()">
-        <option value="">All Status</option>
-        <option value="Current">Current</option>
-        <option value="Left">Left</option>
+        <option value="">All Employees</option>
+        <option value="Current">✅ Current</option>
+        <option value="Ex">❌ Ex Employee</option>
       </select>
     </div>
     <div class="tbl-wrap">
@@ -1591,9 +1591,14 @@ function showScreen(id){
 
 // ═══ DASHBOARD ═══
 function updateDashboard(){
-  document.getElementById('d-emp-count').textContent=employees.length;
-  const present=employees.filter(e=>e.att==='Present').length;
-  document.getElementById('d-att-count').textContent=present+'/'+employees.length;
+  const currentEmps=employees.filter(e=>e.status==='Current'||!e.status);
+  document.getElementById('d-emp-count').textContent=currentEmps.length;
+  const today=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'}).split('/').reverse().join('-');
+  const todayDates=[new Date().toISOString().split('T')[0], new Date().toLocaleDateString('en-GB').split('/').join('-')];
+  const presentToday=new Set(attendanceLogs.filter(l=>todayDates.some(d=>l.date&&l.date.includes(new Date().toISOString().split('T')[0].slice(5)))||l.date===new Date().toISOString().split('T')[0]).map(l=>l.username)).size;
+  const todayStr=new Date().toISOString().split('T')[0];
+  const presentCount=new Set(attendanceLogs.filter(l=>l.date===todayStr).map(l=>l.username)).size;
+  document.getElementById('d-att-count').textContent=presentCount+'/'+currentEmps.length;
   const totalSal=salaries.reduce((a,s)=>a+(parseFloat(s.basic)||0)+(parseFloat(s.ot)||0)+(parseFloat(s.allow)||0)-(parseFloat(s.pf)||0)-(parseFloat(s.adv)||0),0);
   document.getElementById('d-sal-val').textContent='₹'+totalSal.toLocaleString('en-IN');
   document.getElementById('d-con-count').textContent=contracts.filter(c=>c.status==='active').length;
@@ -1617,6 +1622,18 @@ function renderEmpTable(){
     const mx=!st||e.status===st;
     return ms&&mx;
   });
+  // Show count summary
+  const curCount=employees.filter(e=>e.status==='Current'||!e.status).length;
+  const exCount=employees.filter(e=>e.status==='Ex').length;
+  let summary=document.getElementById('emp-count-summary');
+  if(!summary){
+    summary=document.createElement('div');
+    summary.id='emp-count-summary';
+    summary.style='margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap;';
+    const tb=document.getElementById('emp-tbody');
+    tb&&tb.closest('table').before(summary);
+  }
+  summary.innerHTML=`<span style="background:#DCFCE7;color:#16A34A;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;">✅ Current: ${curCount}</span><span style="background:#F3F4F6;color:#6B7280;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;">❌ Ex: ${exCount}</span><span style="background:#FFF3E0;color:#FF6B00;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;">👥 Total: ${employees.length}</span>`;
   const tb=document.getElementById('emp-tbody');
   if(!tb)return;
   if(filtered.length===0){
