@@ -514,6 +514,7 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
           <div class="form-field"><label>Weight (kg)</label><input id="nf-weight" placeholder="e.g. 68"/></div>
           <div class="form-field"><label>Blood Group</label><select id="nf-blood"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select></div>
           <div class="form-field"><label>Identifying Mark</label><input id="nf-mark" placeholder="e.g. mole on left cheek"/></div>
+          <div class="form-field"><label>Employee Status</label><select id="nf-status"><option value="Current">Current</option><option value="Ex">Ex Employee</option></select></div>
         </div>
       </div>
       <div class="form-section">
@@ -1188,6 +1189,7 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
       🗑️ Clear All Data from This Device
     </button>
   </div>
+</div><!-- end screen-backup -->
 
 <div class="screen" id="screen-uniform">
   <div class="card" style="padding:12px;">
@@ -1237,7 +1239,7 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
       <div id="uniform-history-list"></div>
     </div>
   </div>
-</div>
+</div><!-- end screen-uniform -->
 
 </div>
 </div><!-- end page-app -->
@@ -1662,6 +1664,7 @@ function editEmployee(id){
   if(e.marital)document.getElementById('nf-marital').value=e.marital;
   if(e.cat)document.getElementById('nf-cat').value=e.cat;
   if(e.blood)document.getElementById('nf-blood').value=e.blood;
+  if(e.status&&document.getElementById('nf-status'))document.getElementById('nf-status').value=e.status;
   document.getElementById('add-emp-section').style.display='block';
   document.getElementById('add-emp-section').scrollIntoView({behavior:'smooth'});
 }
@@ -1705,7 +1708,7 @@ function saveEmployee(){
     doj:dojVal?new Date(dojVal).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'—',
     salary:rawSalary?'₹'+Number(rawSalary).toLocaleString('en-IN'):'—',
     rawSalary,rawHeight,rawWeight,
-    status:'Current',
+    status:document.getElementById('nf-status')?.value||'Current',
     addr:document.getElementById('nf-paddr').value,
     caddr:document.getElementById('nf-caddr').value,
     edu:document.getElementById('nf-edu').value,
