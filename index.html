@@ -1278,6 +1278,56 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
   </div>
 </div>
 
+<div class="screen" id="screen-uniform">
+  <div class="card">
+    <div class="card-head"><span class="card-title">👕 Uniform Balance Sheet</span></div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button id="utab-stock" class="btn btn-primary btn-sm" style="flex:1;" onclick="uTab('stock')">📦 Stock</button>
+      <button id="utab-issue" class="btn btn-outline btn-sm" style="flex:1;" onclick="uTab('issue')">➕ Issue</button>
+      <button id="utab-history" class="btn btn-outline btn-sm" style="flex:1;" onclick="uTab('history')">📋 History</button>
+    </div>
+    <div id="upanel-stock">
+      <div class="card" style="margin-bottom:12px;">
+        <div style="font-weight:700;font-size:14px;margin-bottom:10px;color:var(--saffron-dark);">➕ Add Stock Purchase</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+          <div><label class="form-label">Item</label>
+            <select id="us-item" class="form-input" onchange="uUpdateSizeVis()">
+              <option>Uniform</option><option>Shoes</option><option>Cap</option>
+            </select>
+          </div>
+          <div id="us-size-wrap"><label class="form-label">Size</label>
+            <select id="us-size" class="form-input">
+              <option>30</option><option>32</option><option>34</option><option>36</option><option>38</option><option>40</option><option>42</option>
+            </select>
+          </div>
+          <div><label class="form-label">Qty Purchased</label>
+            <input id="us-qty" type="number" class="form-input" min="1" placeholder="e.g. 10">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="addUniformStock()">✅ Add to Stock</button>
+      </div>
+      <div class="card">
+        <div style="font-weight:700;font-size:14px;margin-bottom:10px;color:var(--saffron-dark);">📦 Current Stock Balance</div>
+        <div id="uniform-stock-table"></div>
+      </div>
+    </div>
+    <div id="upanel-issue" style="display:none;">
+      <div class="card">
+        <div style="font-weight:700;font-size:14px;margin-bottom:10px;color:var(--saffron-dark);">👕 Issue Uniform to Employee</div>
+        <div style="margin-bottom:8px;"><label class="form-label">Employee</label><select id="ui-emp" class="form-input"></select></div>
+        <div style="margin-bottom:8px;"><label class="form-label">Date</label><input id="ui-date" type="date" class="form-input"></div>
+        <div style="font-weight:600;font-size:13px;margin:10px 0 6px;color:var(--text2);">Items to Issue:</div>
+        <div id="ui-items-wrap"></div>
+        <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="issueUniform()">✅ Issue Uniform</button>
+      </div>
+    </div>
+    <div id="upanel-history" style="display:none;">
+      <div style="margin-bottom:8px;"><input id="uh-search" class="form-input" placeholder="🔍 Search employee..." oninput="renderUniformHistory()"></div>
+      <div id="uniform-history-list"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══ ROLES ═══
 const ROLES={
@@ -4663,55 +4713,6 @@ window.saveDB = saveDB;      // keep window.saveDB in sync
 </script>
 
 <!-- ═══ UNIFORM SCREEN ═══ -->
-<div class="screen" id="screen-uniform">
-  <div class="card">
-    <div class="card-head"><span class="card-title">👕 Uniform Balance Sheet</span></div>
-    <div style="display:flex;gap:8px;margin-bottom:14px;">
-      <button id="utab-stock" class="btn btn-primary btn-sm" style="flex:1;" onclick="uTab('stock')">📦 Stock</button>
-      <button id="utab-issue" class="btn btn-outline btn-sm" style="flex:1;" onclick="uTab('issue')">➕ Issue</button>
-      <button id="utab-history" class="btn btn-outline btn-sm" style="flex:1;" onclick="uTab('history')">📋 History</button>
-    </div>
-    <div id="upanel-stock">
-      <div class="card" style="margin-bottom:12px;">
-        <div style="font-weight:700;font-size:14px;margin-bottom:10px;color:var(--saffron-dark);">➕ Add Stock Purchase</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
-          <div><label class="form-label">Item</label>
-            <select id="us-item" class="form-input" onchange="uUpdateSizeVis()">
-              <option>Uniform</option><option>Shoes</option><option>Cap</option>
-            </select>
-          </div>
-          <div id="us-size-wrap"><label class="form-label">Size</label>
-            <select id="us-size" class="form-input">
-              <option>30</option><option>32</option><option>34</option><option>36</option><option>38</option><option>40</option><option>42</option>
-            </select>
-          </div>
-          <div><label class="form-label">Qty Purchased</label>
-            <input id="us-qty" type="number" class="form-input" min="1" placeholder="e.g. 10">
-          </div>
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="addUniformStock()">✅ Add to Stock</button>
-      </div>
-      <div class="card">
-        <div style="font-weight:700;font-size:14px;margin-bottom:10px;color:var(--saffron-dark);">📦 Current Stock Balance</div>
-        <div id="uniform-stock-table"></div>
-      </div>
-    </div>
-    <div id="upanel-issue" style="display:none;">
-      <div class="card">
-        <div style="font-weight:700;font-size:14px;margin-bottom:10px;color:var(--saffron-dark);">👕 Issue Uniform to Employee</div>
-        <div style="margin-bottom:8px;"><label class="form-label">Employee</label><select id="ui-emp" class="form-input"></select></div>
-        <div style="margin-bottom:8px;"><label class="form-label">Date</label><input id="ui-date" type="date" class="form-input"></div>
-        <div style="font-weight:600;font-size:13px;margin:10px 0 6px;color:var(--text2);">Items to Issue:</div>
-        <div id="ui-items-wrap"></div>
-        <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="issueUniform()">✅ Issue Uniform</button>
-      </div>
-    </div>
-    <div id="upanel-history" style="display:none;">
-      <div style="margin-bottom:8px;"><input id="uh-search" class="form-input" placeholder="🔍 Search employee..." oninput="renderUniformHistory()"></div>
-      <div id="uniform-history-list"></div>
-    </div>
-  </div>
-</div>
 
 <!-- Alert Popup Modal -->
 <div class="alert-popup-overlay hidden" id="alert-popup">
