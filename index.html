@@ -518,11 +518,16 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
         </div>
       </div>
       <div class="form-section">
-        <div class="form-section-title">Nominee &amp; Bank Details</div>
+        <div class="form-section-title">👨‍👩‍👧 Nominee Details</div>
         <div class="form-grid">
           <div class="form-field"><label>Nominee Name</label><input id="nf-nom" placeholder="Nominee full name"/></div>
           <div class="form-field"><label>Relation</label><input id="nf-rel" placeholder="e.g. Wife, Father"/></div>
           <div class="form-field"><label>Nominee Phone</label><input id="nf-nomph" placeholder="+91 XXXXX XXXXX"/></div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-title">🏦 Bank Details</div>
+        <div class="form-grid">
           <div class="form-field"><label>Bank Name</label><input id="nf-bank" placeholder="e.g. SBI, HDFC"/></div>
           <div class="form-field"><label>Account Number</label><input id="nf-acc" placeholder="Account number"/></div>
           <div class="form-field"><label>IFSC Code</label><input id="nf-ifsc" placeholder="e.g. SBIN0001234"/></div>
@@ -2118,12 +2123,19 @@ function showProfile(id){
       <div class="doc-status"><span>Uploaded PDF</span><span>${e.pdfName?'<span class="badge b-blue">📄 '+e.pdfName+'</span>':'<span class="badge b-gray">None uploaded</span>'}</span></div>
     </div>
     <div class="profile-section">
-      <div class="profile-section-title">Bank &amp; Nominee</div>
+      <div class="profile-section-title">🏦 Bank Details</div>
       <div class="profile-grid">
-        <div class="pf"><div class="pf-l">Bank</div><div class="pf-v">${e.bank||'—'}</div></div>
-        <div class="pf"><div class="pf-l">Account</div><div class="pf-v">${e.acc||'—'}</div></div>
-        <div class="pf"><div class="pf-l">IFSC</div><div class="pf-v">${e.ifsc||'—'}</div></div>
-        <div class="pf"><div class="pf-l">Nominee</div><div class="pf-v">${e.nom||'—'} (${e.rel||'—'})</div></div>
+        <div class="pf"><div class="pf-l">Bank Name</div><div class="pf-v">${e.bank||'—'}</div></div>
+        <div class="pf"><div class="pf-l">Account No</div><div class="pf-v">${e.acc||'—'}</div></div>
+        <div class="pf"><div class="pf-l">IFSC Code</div><div class="pf-v">${e.ifsc||'—'}</div></div>
+      </div>
+    </div>
+    <div class="profile-section">
+      <div class="profile-section-title">👨‍👩‍👧 Nominee Details</div>
+      <div class="profile-grid">
+        <div class="pf"><div class="pf-l">Nominee Name</div><div class="pf-v">${e.nom||'—'}</div></div>
+        <div class="pf"><div class="pf-l">Relation</div><div class="pf-v">${e.rel||'—'}</div></div>
+        <div class="pf"><div class="pf-l">Nominee Phone</div><div class="pf-v">${e.nomph||'—'}</div></div>
       </div>
     </div>
     <div style="margin-top:12px;display:flex;gap:8px;">
