@@ -41,11 +41,11 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);overflow-x:hidden;}
 h1,h2,h3,.brand{font-family:'Rajdhani',sans-serif;}
-.page{display:none;min-height:100vh;}
-.page.active{display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;}
+.page{display:none;}
+.page.active{display:flex;flex-direction:column;min-height:100vh;justify-content:flex-start;align-items:stretch;}
 #page-login.active{align-items:center;justify-content:center;}
-
-/* LOGIN */
+.screen{display:none;padding:14px;width:100%;box-sizing:border-box;flex-shrink:0;}
+.screen.active{display:block;}
 #page-login{background:var(--saffron);background-image:radial-gradient(ellipse at 20% 20%,#FF8C33 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,#CC5500 0%,transparent 50%),repeating-linear-gradient(45deg,transparent,transparent 30px,rgba(255,255,255,0.03) 30px,rgba(255,255,255,0.03) 31px);align-items:center;justify-content:center;padding:24px 16px;}
 .login-outer{width:100%;max-width:440px;}
 .login-hero{text-align:center;margin-bottom:24px;}
@@ -90,9 +90,6 @@ h1,h2,h3,.brand{font-family:'Rajdhani',sans-serif;}
 .nav-item.active .nav-lbl{color:var(--saffron-dark);font-weight:600;}
 
 /* SCREENS */
-.screen{display:none;padding:14px;width:100%;box-sizing:border-box;}
-.screen.active{display:block;}
-
 /* CARDS */
 .card{background:#fff;border-radius:var(--radius-lg);border:1.5px solid var(--border);padding:14px;margin-bottom:12px;box-shadow:var(--shadow);}
 .card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:6px;}
@@ -1575,7 +1572,7 @@ function showScreen(id){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const s=document.getElementById('screen-'+id);
   const n=document.getElementById('nav-'+id);
-  if(s)s.classList.add('active');
+  if(s){s.classList.add('active');s.scrollIntoView({behavior:'instant',block:'start'});window.scrollTo(0,0);}
   if(n)n.classList.add('active');
   if(id==='employees')renderEmpTable();
   if(id==='attendance')initAttendanceScreen();
