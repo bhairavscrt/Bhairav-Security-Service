@@ -1598,7 +1598,7 @@ function updateDashboard(){
   const todayStr=new Date().toISOString().split('T')[0];
   const presentCount=new Set(attendanceLogs.filter(l=>l.date===todayStr).map(l=>l.username)).size;
   document.getElementById('d-att-count').textContent=presentCount+'/'+currentEmps.length;
-  const totalSal=salaries.reduce((a,s)=>a+(parseFloat(s.basic)||0)+(parseFloat(s.ot)||0)+(parseFloat(s.allow)||0)-(parseFloat(s.pf)||0)-(parseFloat(s.adv)||0),0);
+  const totalSal=salaries.reduce((a,s)=>a+(parseFloat(s.basic)||0)+(parseFloat(s.pf)||0)+(parseFloat(s.esic)||0),0);
   document.getElementById('d-sal-val').textContent='₹'+totalSal.toLocaleString('en-IN');
   document.getElementById('d-con-count').textContent=contracts.filter(c=>c.status==='active').length;
   const pendingBills=salesBills.filter(b=>b.status==='pending').reduce((a,b)=>a+(parseFloat(b.amount)||0),0);
