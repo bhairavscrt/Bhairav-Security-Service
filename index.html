@@ -650,14 +650,13 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
 <div class="screen" id="screen-salary">
   <div class="card">
     <div class="card-head">
-      <span class="card-title">Salary Management</span>
-      <div style="display:flex;gap:6px;">
-        <button class="btn btn-primary btn-sm" onclick="showAddSalForm()">+ Add Salary Record</button>
-        <button class="btn btn-outline btn-sm" onclick="generatePDF('salary')">⬇ PDF</button>
-      </div>
+      <span class="card-title">₹ Monthly Salary & Profit</span>
+      <button class="btn btn-primary btn-sm" onclick="document.getElementById('sal-modal').classList.remove('hidden');document.getElementById('sal-modal').dataset.editIdx='';">+ Add Month</button>
     </div>
-    <div id="sal-empty" style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">No salary records yet. Add salary records for employees.</div>
+    <div id="sal-empty" style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">No records yet. Add monthly salary expense.</div>
     <div id="sal-list"></div>
+  </div>
+</div>
   </div>
 </div>
 
@@ -1266,29 +1265,23 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
 <div class="modal-overlay hidden" id="sal-modal">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title">Add / Edit Salary Record</span>
+      <span class="modal-title">₹ Monthly Salary Record</span>
       <button class="modal-close" onclick="document.getElementById('sal-modal').classList.add('hidden')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="form-section">
-        <div class="form-grid">
-          <div class="form-field full"><label>Employee Name *</label><input id="sm-name" placeholder="Employee full name"/></div>
-          <div class="form-field"><label>Employee ID</label><input id="sm-id" placeholder="e.g. EMP-0001"/></div>
-          <div class="form-field"><label>Month</label><input id="sm-month" placeholder="e.g. April 2026"/></div>
-          <div class="form-field"><label>Basic Salary (₹)</label><input id="sm-basic" type="number" placeholder="10000"/></div>
-          <div class="form-field"><label>Overtime (₹)</label><input id="sm-ot" type="number" placeholder="0"/></div>
-          <div class="form-field"><label>Allowance (₹)</label><input id="sm-allow" type="number" placeholder="0"/></div>
-          <div class="form-field"><label>PF Deduction (₹)</label><input id="sm-pf" type="number" placeholder="0"/></div>
-          <div class="form-field"><label>Advance Deduction (₹)</label><input id="sm-adv" type="number" placeholder="0"/></div>
-          <div class="form-field"><label>Status</label><select id="sm-status"><option value="Paid">Paid</option><option value="Pending">Pending</option></select></div>
-        </div>
+      <div class="form-grid">
+        <div class="form-field full"><label>Month *</label><input id="sm-month" placeholder="e.g. April 2026"/></div>
+        <div class="form-field"><label>Total Salary Paid (₹)</label><input id="sm-basic" type="number" placeholder="0"/></div>
+        <div class="form-field"><label>GST Paid (₹)</label><input id="sm-gst" type="number" placeholder="0"/></div>
+        <div class="form-field"><label>PF Paid (₹)</label><input id="sm-pf" type="number" placeholder="0"/></div>
+        <div class="form-field"><label>ESIC Paid (₹)</label><input id="sm-esic" type="number" placeholder="0"/></div>
+        <div class="form-field"><label>Other Expenses (₹)</label><input id="sm-other" type="number" placeholder="0"/></div>
       </div>
-      <div style="display:flex;gap:8px;">
+      <div id="sm-err" style="font-size:12px;color:var(--red);margin-top:8px;"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
         <button class="btn btn-primary" onclick="saveSalary()">💾 Save</button>
-        <button class="btn btn-outline btn-sm" onclick="generatePDF('salaryslip')">⬇ Salary Slip PDF</button>
         <button class="btn btn-outline" onclick="document.getElementById('sal-modal').classList.add('hidden')">Cancel</button>
       </div>
-      <div id="sm-err" style="font-size:12px;color:var(--red);margin-top:8px;min-height:14px;"></div>
     </div>
   </div>
 </div>
@@ -2586,56 +2579,76 @@ function renderSalList(){
   if(!el)return;
   if(salaries.length===0){if(emptyEl)emptyEl.style.display='';el.innerHTML='';return;}
   if(emptyEl)emptyEl.style.display='none';
-  el.innerHTML=salaries.map((s,i)=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
-      <span style="font-size:11px;color:var(--text3);width:20px;">${i+1}</span>
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:600;">${s.name}</div>
-        <div style="font-size:10px;color:var(--text3);">${s.empId||''} · ${s.month||''}</div>
+  el.innerHTML=salaries.map((s,i)=>{
+    const salary=parseFloat(s.basic)||0;
+    const gst=parseFloat(s.gst)||0;
+    const pf=parseFloat(s.pf)||0;
+    const esic=parseFloat(s.esic)||0;
+    const other=parseFloat(s.other)||0;
+    const totalExp=salary+gst+pf+esic+other;
+    // Get sales for this month from salesBills
+    const monthSales=salesBills.filter(b=>b.month===s.month||((b.date||'').includes(s.month))).reduce((a,b)=>a+(parseFloat(b.amount)||0),0);
+    const profit=monthSales-totalExp;
+    return `<div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;">📅 ${s.month}</div>
+        <div style="display:flex;gap:6px;">
+          <button class="edit-btn" onclick="editSalary(${i})">Edit</button>
+          <button class="del-btn" onclick="deleteSalary(${i})">🗑</button>
+        </div>
       </div>
-      <span style="font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;color:var(--saffron-dark);">₹${((parseFloat(s.basic)||0)+(parseFloat(s.ot)||0)+(parseFloat(s.allow)||0)-(parseFloat(s.pf)||0)-(parseFloat(s.adv)||0)).toLocaleString('en-IN')}</span>
-      <span class="badge ${s.status==='Paid'?'b-green':'b-amber'}">${s.status}</span>
-      <button class="edit-btn" onclick="editSalary(${i})">Edit</button>
-      <button class="del-btn" onclick="deleteSalary(${i})">🗑</button>
-    </div>`).join('');
-}
-
-function showAddSalForm(){
-  document.getElementById('cu-editing-idx') && (document.getElementById('sal-modal').querySelector('input[type=hidden]') ? null : null);
-  document.getElementById('sal-modal').classList.remove('hidden');
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:#FFF8F0;border-radius:8px;"><span>💼 Salary Paid</span><span style="font-weight:700;">₹${salary.toLocaleString('en-IN')}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:#FFF8F0;border-radius:8px;"><span>🧾 GST</span><span style="font-weight:700;">₹${gst.toLocaleString('en-IN')}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:#FFF8F0;border-radius:8px;"><span>🏦 PF</span><span style="font-weight:700;">₹${pf.toLocaleString('en-IN')}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:#FFF8F0;border-radius:8px;"><span>🏥 ESIC</span><span style="font-weight:700;">₹${esic.toLocaleString('en-IN')}</span></div>
+        ${other>0?`<div style="display:flex;justify-content:space-between;padding:5px 8px;background:#FFF8F0;border-radius:8px;"><span>📦 Other</span><span style="font-weight:700;">₹${other.toLocaleString('en-IN')}</span></div>`:''}
+      </div>
+      <div style="border-top:1.5px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text3);">Total Expenses</span><span style="font-weight:700;color:#DC2626;">₹${totalExp.toLocaleString('en-IN')}</span></div>
+        ${monthSales>0?`<div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text3);">Sales Bills</span><span style="font-weight:700;color:#16A34A;">₹${monthSales.toLocaleString('en-IN')}</span></div>`:''}
+        <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding:6px 10px;border-radius:8px;background:${profit>=0?'#DCFCE7':'#FEE2E2'};color:${profit>=0?'#16A34A':'#DC2626'};">
+          <span>${profit>=0?'✅ Net Profit':'❌ Net Loss'}</span>
+          <span>₹${Math.abs(profit).toLocaleString('en-IN')}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function editSalary(i){
   const s=salaries[i];
-  document.getElementById('sm-name').value=s.name||'';
-  document.getElementById('sm-id').value=s.empId||'';
   document.getElementById('sm-month').value=s.month||'';
   document.getElementById('sm-basic').value=s.basic||'';
-  document.getElementById('sm-ot').value=s.ot||'';
-  document.getElementById('sm-allow').value=s.allow||'';
+  document.getElementById('sm-gst').value=s.gst||'';
   document.getElementById('sm-pf').value=s.pf||'';
-  document.getElementById('sm-adv').value=s.adv||'';
-  document.getElementById('sm-status').value=s.status||'Paid';
+  document.getElementById('sm-esic').value=s.esic||'';
+  document.getElementById('sm-other').value=s.other||'';
   document.getElementById('sal-modal').dataset.editIdx=i;
   document.getElementById('sal-modal').classList.remove('hidden');
 }
 
 function deleteSalary(i){
-  if(!confirm('Delete this salary record?'))return;
-  salaries.splice(i,1);renderSalList();updateDashboard();saveDB();showToast('Salary record deleted.');
+  if(!confirm('Delete this record?'))return;
+  salaries.splice(i,1);renderSalList();saveDB();showToast('Deleted.');
 }
 
 function saveSalary(){
-  const name=document.getElementById('sm-name').value.trim();
-  if(!name){document.getElementById('sm-err').textContent='Employee name required.';return;}
+  const month=document.getElementById('sm-month').value.trim();
+  if(!month){document.getElementById('sm-err').textContent='Month is required.';return;}
+  const rec={month,basic:document.getElementById('sm-basic').value,gst:document.getElementById('sm-gst').value,pf:document.getElementById('sm-pf').value,esic:document.getElementById('sm-esic').value,other:document.getElementById('sm-other').value};
   const editIdx=document.getElementById('sal-modal').dataset.editIdx;
-  const rec={name,empId:document.getElementById('sm-id').value,month:document.getElementById('sm-month').value,basic:document.getElementById('sm-basic').value,ot:document.getElementById('sm-ot').value,allow:document.getElementById('sm-allow').value,pf:document.getElementById('sm-pf').value,adv:document.getElementById('sm-adv').value,status:document.getElementById('sm-status').value};
-  if(editIdx!==undefined&&editIdx!==''){salaries[parseInt(editIdx)]=rec;delete document.getElementById('sal-modal').dataset.editIdx;}
+  if(editIdx!==undefined&&editIdx!=='')salaries[parseInt(editIdx)]=rec;
   else salaries.push(rec);
   document.getElementById('sal-modal').classList.add('hidden');
-  renderSalList();updateDashboard();saveDB();showToast('Salary record saved!');
-  document.getElementById('sm-err').textContent='';
+  ['sm-month','sm-basic','sm-gst','sm-pf','sm-esic','sm-other'].forEach(id=>document.getElementById(id).value='');
+  renderSalList();updateDashboard();saveDB();showToast('✅ Salary record saved!');
 }
+
+function showAddSalForm(){
+  document.getElementById('sal-modal').classList.remove('hidden');
+}
+
 
 // ═══ CONTRACTS ═══
 function renderContracts(){
