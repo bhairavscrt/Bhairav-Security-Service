@@ -42,7 +42,8 @@
 body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);overflow-x:hidden;}
 h1,h2,h3,.brand{font-family:'Rajdhani',sans-serif;}
 .page{display:none;min-height:100vh;}
-.page.active{display:flex;flex-direction:column;}
+.page.active{display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;}
+#page-login.active{align-items:center;justify-content:center;}
 
 /* LOGIN */
 #page-login{background:var(--saffron);background-image:radial-gradient(ellipse at 20% 20%,#FF8C33 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,#CC5500 0%,transparent 50%),repeating-linear-gradient(45deg,transparent,transparent 30px,rgba(255,255,255,0.03) 30px,rgba(255,255,255,0.03) 31px);align-items:center;justify-content:center;padding:24px 16px;}
