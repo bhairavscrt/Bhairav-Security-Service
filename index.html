@@ -89,7 +89,7 @@ h1,h2,h3,.brand{font-family:'Rajdhani',sans-serif;}
 .nav-item.active .nav-lbl{color:var(--saffron-dark);font-weight:600;}
 
 /* SCREENS */
-.screen{display:none;padding:14px;flex:1;}
+.screen{display:none;padding:14px;flex:1;overflow-y:auto;align-self:flex-start;width:100%;box-sizing:border-box;}
 .screen.active{display:block;}
 
 /* CARDS */
@@ -1271,11 +1271,12 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-field full"><label>Month *</label><input id="sm-month" placeholder="e.g. April 2026"/></div>
-        <div class="form-field"><label>Total Salary Paid (₹)</label><input id="sm-basic" type="number" placeholder="0"/></div>
-        <div class="form-field"><label>GST Paid (₹)</label><input id="sm-gst" type="number" placeholder="0"/></div>
-        <div class="form-field"><label>PF Paid (₹)</label><input id="sm-pf" type="number" placeholder="0"/></div>
-        <div class="form-field"><label>ESIC Paid (₹)</label><input id="sm-esic" type="number" placeholder="0"/></div>
-        <div class="form-field"><label>Other Expenses (₹)</label><input id="sm-other" type="number" placeholder="0"/></div>
+        <div class="form-field"><label>💰 Sales Bill Received (₹)</label><input id="sm-sales" type="number" placeholder="0"/></div>
+        <div class="form-field"><label>💼 Total Salary Paid (₹)</label><input id="sm-basic" type="number" placeholder="0"/></div>
+        <div class="form-field"><label>🧾 GST Paid (₹)</label><input id="sm-gst" type="number" placeholder="0"/></div>
+        <div class="form-field"><label>🏦 PF Paid (₹)</label><input id="sm-pf" type="number" placeholder="0"/></div>
+        <div class="form-field"><label>🏥 ESIC Paid (₹)</label><input id="sm-esic" type="number" placeholder="0"/></div>
+        <div class="form-field"><label>📦 Other Expenses (₹)</label><input id="sm-other" type="number" placeholder="0"/></div>
       </div>
       <div id="sm-err" style="font-size:12px;color:var(--red);margin-top:8px;"></div>
       <div style="display:flex;gap:8px;margin-top:10px;">
@@ -2586,8 +2587,7 @@ function renderSalList(){
     const esic=parseFloat(s.esic)||0;
     const other=parseFloat(s.other)||0;
     const totalExp=salary+gst+pf+esic+other;
-    // Get sales for this month from salesBills
-    const monthSales=salesBills.filter(b=>b.month===s.month||((b.date||'').includes(s.month))).reduce((a,b)=>a+(parseFloat(b.amount)||0),0);
+    const monthSales=parseFloat(s.sales)||0;
     const profit=monthSales-totalExp;
     return `<div class="card" style="margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -2606,7 +2606,7 @@ function renderSalList(){
       </div>
       <div style="border-top:1.5px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:5px;">
         <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text3);">Total Expenses</span><span style="font-weight:700;color:#DC2626;">₹${totalExp.toLocaleString('en-IN')}</span></div>
-        ${monthSales>0?`<div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text3);">Sales Bills</span><span style="font-weight:700;color:#16A34A;">₹${monthSales.toLocaleString('en-IN')}</span></div>`:''}
+        ${monthSales>0?`<div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text3);">💰 Sales Received</span><span style="font-weight:700;color:#16A34A;">₹${monthSales.toLocaleString('en-IN')}</span></div>`:''}
         <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding:6px 10px;border-radius:8px;background:${profit>=0?'#DCFCE7':'#FEE2E2'};color:${profit>=0?'#16A34A':'#DC2626'};">
           <span>${profit>=0?'✅ Net Profit':'❌ Net Loss'}</span>
           <span>₹${Math.abs(profit).toLocaleString('en-IN')}</span>
@@ -2619,6 +2619,7 @@ function renderSalList(){
 function editSalary(i){
   const s=salaries[i];
   document.getElementById('sm-month').value=s.month||'';
+  document.getElementById('sm-sales').value=s.sales||'';
   document.getElementById('sm-basic').value=s.basic||'';
   document.getElementById('sm-gst').value=s.gst||'';
   document.getElementById('sm-pf').value=s.pf||'';
@@ -2636,12 +2637,12 @@ function deleteSalary(i){
 function saveSalary(){
   const month=document.getElementById('sm-month').value.trim();
   if(!month){document.getElementById('sm-err').textContent='Month is required.';return;}
-  const rec={month,basic:document.getElementById('sm-basic').value,gst:document.getElementById('sm-gst').value,pf:document.getElementById('sm-pf').value,esic:document.getElementById('sm-esic').value,other:document.getElementById('sm-other').value};
+  const rec={month,sales:document.getElementById('sm-sales').value,basic:document.getElementById('sm-basic').value,gst:document.getElementById('sm-gst').value,pf:document.getElementById('sm-pf').value,esic:document.getElementById('sm-esic').value,other:document.getElementById('sm-other').value};
   const editIdx=document.getElementById('sal-modal').dataset.editIdx;
   if(editIdx!==undefined&&editIdx!=='')salaries[parseInt(editIdx)]=rec;
   else salaries.push(rec);
   document.getElementById('sal-modal').classList.add('hidden');
-  ['sm-month','sm-basic','sm-gst','sm-pf','sm-esic','sm-other'].forEach(id=>document.getElementById(id).value='');
+  ['sm-month','sm-sales','sm-basic','sm-gst','sm-pf','sm-esic','sm-other'].forEach(id=>document.getElementById(id).value='');
   renderSalList();updateDashboard();saveDB();showToast('✅ Salary record saved!');
 }
 
