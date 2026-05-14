@@ -42,7 +42,7 @@
 body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);overflow-x:hidden;}
 h1,h2,h3,.brand{font-family:'Rajdhani',sans-serif;}
 .page{display:none;min-height:100vh;}
-.page.active{display:block;}
+.page.active{display:flex;flex-direction:column;}
 
 /* LOGIN */
 #page-login{background:var(--saffron);background-image:radial-gradient(ellipse at 20% 20%,#FF8C33 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,#CC5500 0%,transparent 50%),repeating-linear-gradient(45deg,transparent,transparent 30px,rgba(255,255,255,0.03) 30px,rgba(255,255,255,0.03) 31px);align-items:center;justify-content:center;padding:24px 16px;}
@@ -66,7 +66,7 @@ h1,h2,h3,.brand{font-family:'Rajdhani',sans-serif;}
 .login-note{margin-top:16px;background:rgba(255,255,255,0.15);border-radius:var(--radius);padding:12px 14px;border:1px solid rgba(255,255,255,0.25);font-size:12px;color:rgba(255,255,255,0.85);}
 
 /* APP SHELL */
-#page-app{background:var(--cream);}
+#page-app{background:var(--cream);justify-content:flex-start;align-items:stretch;}
 .topbar{background:var(--saffron);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(255,107,0,0.3);}
 .tb-left{display:flex;align-items:center;gap:10px;}
 .tb-logo{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;}
