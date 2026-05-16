@@ -3219,7 +3219,8 @@ function renderAlerts(){
   contracts.forEach(c=>{
     if(c.end&&c.status!=='expired'){
       const days=Math.ceil((new Date(c.end)-new Date())/(1000*60*60*24));
-      if(days<=30&&days>=0)autoAlerts.push({type:days<=7?'urgent':'warning',msg:c.company+' contract expires in '+days+' day'+(days===1?'':'s'),sub:'End: '+c.end+' · '+c.guards+' guards · ₹'+(c.amount?Number(c.amount).toLocaleString('en-IN'):'--')+'/mo'});
+      if(days<0)autoAlerts.push({type:'urgent',msg:c.company+' contract has EXPIRED!',sub:'End: '+c.end+' · '+c.guards+' guards · ₹'+(c.amount?Number(c.amount).toLocaleString('en-IN'):'--')+'/mo'});
+      else if(days<=60&&days>=0)autoAlerts.push({type:days<=7?'urgent':'warning',msg:c.company+' contract expires in '+days+' day'+(days===1?'':'s'),sub:'End: '+c.end+' · '+c.guards+' guards · ₹'+(c.amount?Number(c.amount).toLocaleString('en-IN'):'--')+'/mo'});
     }
   });
   renderedAlerts=[...alertsList,...autoAlerts];
@@ -3532,16 +3533,16 @@ function checkAndTriggerAlerts(){
     if(c.end&&c.status!=='expired'){
       const days=Math.ceil((new Date(c.end)-new Date())/(1000*60*60*24));
       if(days<=7&&days>=0)autoAlerts.push({type:'urgent',msg:c.company+' contract expires in '+days+' day'+(days===1?'':'s')+'!',sub:'End Date: '+c.end+' · Guards: '+(c.guards||'—')+' · Amount: ₹'+(c.amount?Number(c.amount).toLocaleString('en-IN'):'—')+'/mo. Take immediate action!'});
-      else if(days<=30&&days>=0)autoAlerts.push({type:'warning',msg:c.company+' contract expiring in '+days+' days',sub:'End Date: '+c.end+' · Please renew the contract before it expires.'});
+      else if(days<=60&&days>=0)autoAlerts.push({type:'warning',msg:c.company+' contract expiring in '+days+' days',sub:'End Date: '+c.end+' · Please renew the contract before it expires.'});
+      else if(days<0)autoAlerts.push({type:'urgent',msg:c.company+' contract has EXPIRED!',sub:'End Date was: '+c.end+' · Please renew immediately!'});
     }
   });
   autoAlerts.forEach(a=>{
-    const key=a.msg;
-    if(!sessionStorage.getItem('acked:'+key)){
+    const key='acked:'+a.msg.slice(0,40)+new Date().toDateString();
+    if(!localStorage.getItem(key)){
       queueAlertPopup(a);
-      // Send notifications only once per session per alert
-      if(!sessionStorage.getItem('notif:'+key)){
-        sessionStorage.setItem('notif:'+key,'1');
+      if(!sessionStorage.getItem('notif:'+a.msg)){
+        sessionStorage.setItem('notif:'+a.msg,'1');
         sendNotifications(a.msg,a.sub,a.type);
       }
     }
