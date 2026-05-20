@@ -808,7 +808,7 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
       <div class="tbl-wrap">
         <table>
           <thead><tr>
-            <th>#</th><th>Company Name</th><th>Invoice No.</th><th>Bill Date</th><th>Amount (₹)</th><th>Payment Status</th><th>Received (₹)</th><th>Pending (₹)</th><th>PDF</th><th>Actions</th>
+            <th>#</th><th>Company Name</th><th>Invoice No.</th><th>Bill Date</th><th>Amount (₹)</th><th>TDS (₹)</th><th>Net Receivable (₹)</th><th>Payment Status</th><th>Received (₹)</th><th>Pending (₹)</th><th>PDF</th><th>Actions</th>
           </tr></thead>
           <tbody id="sales-tbody"><tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text3);">No sales bills yet. Click "+ Add Bill" to add one.</td></tr></tbody>
         </table>
@@ -840,7 +840,8 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
           <div class="form-field full"><label>Company Name *</label><input id="bf-company" placeholder="Client company name"/></div>
           <div class="form-field"><label>Invoice Number *</label><input id="bf-invoice" placeholder="e.g. INV-2026-001"/></div>
           <div class="form-field"><label>Bill Date</label><input id="bf-date" type="date"/></div>
-          <div class="form-field"><label>Amount (₹) *</label><input id="bf-amount" type="number" placeholder="e.g. 48000"/></div>
+          <div class="form-field"><label>Amount (₹) *</label><input id="bf-amount" type="number" placeholder="e.g. 48000" oninput="updateTDSHint()"/></div>
+          <div class="form-field"><label>TDS Deducted (₹)</label><input id="bf-tds" type="number" placeholder="e.g. 4800" oninput="updateTDSHint()"/><span id="bf-tds-hint" style="font-size:10px;color:#16A34A;margin-top:3px;display:block;"></span></div>
           <div class="form-field"><label>Payment Status</label><select id="bf-status" onchange="const rw=document.getElementById('bf-received-wrap');rw.style.display=this.value==='partial'?'':'none';updateReceivedAmountHint();"><option value="pending">Pending</option><option value="partial">Partially Received</option><option value="received">Received</option></select></div>
           <div class="form-field" id="bf-received-wrap" style="display:none;"><label>Amount Received (₹)</label><input id="bf-received" type="number" placeholder="e.g. 20000" oninput="updateReceivedAmountHint()"/><span id="bf-pending-hint" style="font-size:10px;color:var(--red);margin-top:3px;display:block;"></span></div>
           <div class="form-field full">
@@ -2738,7 +2739,7 @@ function renderBills(){
   const sf=salesBills.filter(b=>!q||(b.company||'').toLowerCase().includes(q)||(b.invoice||'').toLowerCase().includes(q));
   const stb=document.getElementById('sales-tbody');
   if(stb){
-    if(sf.length===0){stb.innerHTML='<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text3);">'+(salesBills.length===0?'No sales bills yet.':'No bills match.')+'</td></tr>';}
+    if(sf.length===0){stb.innerHTML='<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--text3);">'+(salesBills.length===0?'No sales bills yet.':'No bills match.')+'</td></tr>';}
     else{
       const rowStyle={
         pending:'background:#FFD5D5!important;',
@@ -2762,6 +2763,8 @@ function renderBills(){
           <td style="font-family:monospace;font-size:11px;">${b.invoice}</td>
           <td>${b.date||'—'}</td>
           <td>₹${Number(b.amount).toLocaleString('en-IN')}</td>
+          <td style="color:#DC2626;font-weight:600;">${b.tds>0?'₹'+Number(b.tds).toLocaleString('en-IN'):'—'}</td>
+          <td style="color:#16A34A;font-weight:600;">${b.tds>0?'₹'+(Number(b.amount)-Number(b.tds)).toLocaleString('en-IN'):'—'}</td>
           <td>
             <select class="status-sel" onchange="updateSalesBillStatus(${idx},this.value)" style="${selectStyle}">
               <option value="pending" ${b.status==='pending'?'selected':''}>⏳ Pending</option>
@@ -2858,6 +2861,8 @@ function editBill(type,i){
     document.getElementById('bf-invoice').value=b.invoice||'';
     document.getElementById('bf-date').value=b.date||'';
     document.getElementById('bf-amount').value=b.amount||'';
+    document.getElementById('bf-tds').value=b.tds||'';
+    updateTDSHint();
     document.getElementById('bf-status').value=b.status||'pending';
     const recWrap=document.getElementById('bf-received-wrap');
     if(b.status==='partial'){
@@ -2884,6 +2889,13 @@ function editBill(type,i){
   document.getElementById('add-bill-section').scrollIntoView({behavior:'smooth'});
 }
 
+function updateTDSHint(){
+  const amt=parseFloat(document.getElementById('bf-amount').value)||0;
+  const tds=parseFloat(document.getElementById('bf-tds').value)||0;
+  const hint=document.getElementById('bf-tds-hint');
+  if(hint&&amt>0&&tds>0)hint.textContent='Net Receivable: ₹'+(amt-tds).toLocaleString('en-IN');
+  else if(hint)hint.textContent='';
+}
 function updateReceivedAmountHint(){
   const total=parseFloat(document.getElementById('bf-amount').value)||0;
   const received=parseFloat(document.getElementById('bf-received').value)||0;
@@ -2903,7 +2915,9 @@ function saveBill(){
     const pdfInfo=pendingBillPdf.sales;
     const status=document.getElementById('bf-status').value;
     const receivedAmount=status==='received'?parseFloat(amount)||(0):status==='partial'?(parseFloat(document.getElementById('bf-received').value)||0):0;
-    const rec={company,invoice,date:document.getElementById('bf-date').value,amount,status,receivedAmount,pdfData:pdfInfo?pdfInfo.data:null,pdfName:pdfInfo?pdfInfo.name:null};
+    const tds=parseFloat(document.getElementById('bf-tds').value)||0;
+    const netReceivable=parseFloat(amount)-tds;
+    const rec={company,invoice,date:document.getElementById('bf-date').value,amount,tds,netReceivable,status,receivedAmount,pdfData:pdfInfo?pdfInfo.data:null,pdfName:pdfInfo?pdfInfo.name:null};
     if(editIdx!=='')salesBills[parseInt(editIdx)]=rec;else salesBills.push(rec);
   } else {
     const item=document.getElementById('bf-item').value.trim();
