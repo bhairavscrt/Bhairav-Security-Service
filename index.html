@@ -840,7 +840,8 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
           <div class="form-field full"><label>Company Name *</label><input id="bf-company" placeholder="Client company name"/></div>
           <div class="form-field"><label>Invoice Number *</label><input id="bf-invoice" placeholder="e.g. INV-2026-001"/></div>
           <div class="form-field"><label>Bill Date</label><input id="bf-date" type="date"/></div>
-          <div class="form-field"><label>Amount (₹) *</label><input id="bf-amount" type="number" placeholder="e.g. 48000" oninput="updateTDSHint()"/></div>
+          <div class="form-field"><label>Amount (₹) *</label><input id="bf-amount" type="number" placeholder="e.g. 48000" oninput="updateTDSHint();updateGSTHint()"/></div>
+          <div class="form-field"><label>GST % (on bill)</label><select id="bf-gst-per" onchange="updateGSTHint()"><option value="0">No GST</option><option value="5">5%</option><option value="12">12%</option><option value="18" selected>18%</option><option value="28">28%</option></select><span id="bf-gst-hint" style="font-size:10px;color:#1D4ED8;margin-top:3px;display:block;"></span></div>
           <div class="form-field"><label>TDS Deducted (₹)</label><input id="bf-tds" type="number" placeholder="e.g. 4800" oninput="updateTDSHint()"/><span id="bf-tds-hint" style="font-size:10px;color:#16A34A;margin-top:3px;display:block;"></span></div>
           <div class="form-field"><label>Payment Status</label><select id="bf-status" onchange="const rw=document.getElementById('bf-received-wrap');rw.style.display=this.value==='partial'?'':'none';updateReceivedAmountHint();"><option value="pending">Pending</option><option value="partial">Partially Received</option><option value="received">Received</option></select></div>
           <div class="form-field" id="bf-received-wrap" style="display:none;"><label>Amount Received (₹)</label><input id="bf-received" type="number" placeholder="e.g. 20000" oninput="updateReceivedAmountHint()"/><span id="bf-pending-hint" style="font-size:10px;color:var(--red);margin-top:3px;display:block;"></span></div>
@@ -1270,9 +1271,10 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-field full"><label>Month *</label><input id="sm-month" placeholder="e.g. April 2026"/></div>
-        <div class="form-field"><label>💰 Sales Bill Received (₹)</label><input id="sm-sales" type="number" placeholder="0"/></div>
-        <div class="form-field"><label>💼 Total Salary Paid (₹)</label><input id="sm-basic" type="number" placeholder="0"/></div>
-        <div class="form-field"><label>🧾 GST Paid (₹)</label><input id="sm-gst" type="number" placeholder="0"/></div>
+        <div class="form-field"><label>💰 Sales Received (₹)</label><input id="sm-sales" type="number" placeholder="0"/></div>
+        <div class="form-field"><label>💼 Salary Paid (₹)</label><input id="sm-basic" type="number" placeholder="0"/></div>
+        <div class="form-field"><label>🧾 GST Collected (₹)</label><input id="sm-gst-col" type="number" placeholder="0"/></div>
+        <div class="form-field"><label>🧾 GST Paid to Govt (₹)</label><input id="sm-gst" type="number" placeholder="0"/></div>
         <div class="form-field"><label>🏦 PF Paid (₹)</label><input id="sm-pf" type="number" placeholder="0"/></div>
         <div class="form-field"><label>🏥 ESIC Paid (₹)</label><input id="sm-esic" type="number" placeholder="0"/></div>
         <div class="form-field"><label>📦 Other Expenses (₹)</label><input id="sm-other" type="number" placeholder="0"/></div>
@@ -2581,6 +2583,7 @@ function renderSalList(){
   if(emptyEl)emptyEl.style.display='none';
   el.innerHTML=salaries.map((s,i)=>{
     const salary=parseFloat(s.basic)||0;
+    const gstCol=parseFloat(s.gstCol)||0;
     const gst=parseFloat(s.gst)||0;
     const pf=parseFloat(s.pf)||0;
     const esic=parseFloat(s.esic)||0;
@@ -2590,22 +2593,26 @@ function renderSalList(){
     const profit=monthSales-totalExp;
     return `<div class="card" style="margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <div style="font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;">📅 ${s.month}</div>
-        <div style="display:flex;gap:6px;">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;">📅 ${s.month}</div>        <div style="display:flex;gap:6px;">
           <button class="edit-btn" onclick="editSalary(${i})">Edit</button>
           <button class="del-btn" onclick="deleteSalary(${i})">🗑</button>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin-bottom:10px;">
-        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:#FFF8F0;border-radius:8px;"><span>💼 Salary Paid</span><span style="font-weight:700;">₹${salary.toLocaleString('en-IN')}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:#FFF8F0;border-radius:8px;"><span>🧾 GST</span><span style="font-weight:700;">₹${gst.toLocaleString('en-IN')}</span></div>
+      <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:4px;">INCOME</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:#F0FDF4;border-radius:8px;"><span>💰 Sales</span><span style="font-weight:700;color:#16A34A;">₹${monthSales.toLocaleString('en-IN')}</span></div>
+        ${gstCol>0?`<div style="display:flex;justify-content:space-between;padding:5px 8px;background:#F0FDF4;border-radius:8px;"><span>🧾 GST Collected</span><span style="font-weight:700;color:#16A34A;">₹${gstCol.toLocaleString('en-IN')}</span></div>`:''}
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:4px;">EXPENSES</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:#FFF8F0;border-radius:8px;"><span>💼 Salary</span><span style="font-weight:700;">₹${salary.toLocaleString('en-IN')}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 8px;background:#FFF8F0;border-radius:8px;"><span>🧾 GST Paid</span><span style="font-weight:700;">₹${gst.toLocaleString('en-IN')}</span></div>
         <div style="display:flex;justify-content:space-between;padding:5px 8px;background:#FFF8F0;border-radius:8px;"><span>🏦 PF</span><span style="font-weight:700;">₹${pf.toLocaleString('en-IN')}</span></div>
         <div style="display:flex;justify-content:space-between;padding:5px 8px;background:#FFF8F0;border-radius:8px;"><span>🏥 ESIC</span><span style="font-weight:700;">₹${esic.toLocaleString('en-IN')}</span></div>
         ${other>0?`<div style="display:flex;justify-content:space-between;padding:5px 8px;background:#FFF8F0;border-radius:8px;"><span>📦 Other</span><span style="font-weight:700;">₹${other.toLocaleString('en-IN')}</span></div>`:''}
       </div>
       <div style="border-top:1.5px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:5px;">
         <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text3);">Total Expenses</span><span style="font-weight:700;color:#DC2626;">₹${totalExp.toLocaleString('en-IN')}</span></div>
-        ${monthSales>0?`<div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text3);">💰 Sales Received</span><span style="font-weight:700;color:#16A34A;">₹${monthSales.toLocaleString('en-IN')}</span></div>`:''}
         <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding:6px 10px;border-radius:8px;background:${profit>=0?'#DCFCE7':'#FEE2E2'};color:${profit>=0?'#16A34A':'#DC2626'};">
           <span>${profit>=0?'✅ Net Profit':'❌ Net Loss'}</span>
           <span>₹${Math.abs(profit).toLocaleString('en-IN')}</span>
@@ -2620,6 +2627,8 @@ function editSalary(i){
   document.getElementById('sm-month').value=s.month||'';
   document.getElementById('sm-sales').value=s.sales||'';
   document.getElementById('sm-basic').value=s.basic||'';
+  document.getElementById('sm-gst-col').value=s.gstCol||'';
+  document.getElementById('sm-gst').value=s.gst||'';
   document.getElementById('sm-gst').value=s.gst||'';
   document.getElementById('sm-pf').value=s.pf||'';
   document.getElementById('sm-esic').value=s.esic||'';
@@ -2636,12 +2645,12 @@ function deleteSalary(i){
 function saveSalary(){
   const month=document.getElementById('sm-month').value.trim();
   if(!month){document.getElementById('sm-err').textContent='Month is required.';return;}
-  const rec={month,sales:document.getElementById('sm-sales').value,basic:document.getElementById('sm-basic').value,gst:document.getElementById('sm-gst').value,pf:document.getElementById('sm-pf').value,esic:document.getElementById('sm-esic').value,other:document.getElementById('sm-other').value};
+  const rec={month,sales:document.getElementById('sm-sales').value,basic:document.getElementById('sm-basic').value,gstCol:document.getElementById('sm-gst-col').value,gst:document.getElementById('sm-gst').value,pf:document.getElementById('sm-pf').value,esic:document.getElementById('sm-esic').value,other:document.getElementById('sm-other').value};
   const editIdx=document.getElementById('sal-modal').dataset.editIdx;
   if(editIdx!==undefined&&editIdx!=='')salaries[parseInt(editIdx)]=rec;
   else salaries.push(rec);
   document.getElementById('sal-modal').classList.add('hidden');
-  ['sm-month','sm-sales','sm-basic','sm-gst','sm-pf','sm-esic','sm-other'].forEach(id=>document.getElementById(id).value='');
+  ['sm-month','sm-sales','sm-basic','sm-gst-col','sm-gst','sm-pf','sm-esic','sm-other'].forEach(id=>document.getElementById(id).value='');
   renderSalList();updateDashboard();saveDB();showToast('✅ Salary record saved!');
 }
 
@@ -2861,8 +2870,9 @@ function editBill(type,i){
     document.getElementById('bf-invoice').value=b.invoice||'';
     document.getElementById('bf-date').value=b.date||'';
     document.getElementById('bf-amount').value=b.amount||'';
+    document.getElementById('bf-gst-per').value=b.gstPer||'18';
     document.getElementById('bf-tds').value=b.tds||'';
-    updateTDSHint();
+    updateTDSHint();updateGSTHint();
     document.getElementById('bf-status').value=b.status||'pending';
     const recWrap=document.getElementById('bf-received-wrap');
     if(b.status==='partial'){
@@ -2889,6 +2899,13 @@ function editBill(type,i){
   document.getElementById('add-bill-section').scrollIntoView({behavior:'smooth'});
 }
 
+function updateGSTHint(){
+  const amt=parseFloat(document.getElementById('bf-amount').value)||0;
+  const per=parseFloat(document.getElementById('bf-gst-per').value)||0;
+  const hint=document.getElementById('bf-gst-hint');
+  if(hint&&amt>0&&per>0)hint.textContent='GST Amount: ₹'+Math.round(amt*per/100).toLocaleString('en-IN');
+  else if(hint)hint.textContent='';
+}
 function updateTDSHint(){
   const amt=parseFloat(document.getElementById('bf-amount').value)||0;
   const tds=parseFloat(document.getElementById('bf-tds').value)||0;
@@ -2916,8 +2933,10 @@ function saveBill(){
     const status=document.getElementById('bf-status').value;
     const receivedAmount=status==='received'?parseFloat(amount)||(0):status==='partial'?(parseFloat(document.getElementById('bf-received').value)||0):0;
     const tds=parseFloat(document.getElementById('bf-tds').value)||0;
+    const gstPer=parseFloat(document.getElementById('bf-gst-per').value)||0;
+    const gstAmt=Math.round((parseFloat(amount)*gstPer/100)*100)/100;
     const netReceivable=parseFloat(amount)-tds;
-    const rec={company,invoice,date:document.getElementById('bf-date').value,amount,tds,netReceivable,status,receivedAmount,pdfData:pdfInfo?pdfInfo.data:null,pdfName:pdfInfo?pdfInfo.name:null};
+    const rec={company,invoice,date:document.getElementById('bf-date').value,amount,tds,gstPer,gstAmt,netReceivable,status,receivedAmount,pdfData:pdfInfo?pdfInfo.data:null,pdfName:pdfInfo?pdfInfo.name:null};
     if(editIdx!=='')salesBills[parseInt(editIdx)]=rec;else salesBills.push(rec);
   } else {
     const item=document.getElementById('bf-item').value.trim();
