@@ -701,7 +701,14 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
       <button class="btn btn-primary" onclick="generateReport()">📊 Generate Report</button>
       <button class="btn btn-outline" onclick="exportReportPDF()">⬇ PDF</button>
       <button class="btn btn-outline" onclick="exportReportExcel()">📗 Excel</button>
+      <button class="btn btn-outline" style="background:#DCFCE7;border-color:#16A34A;color:#16A34A;" onclick="saveCurrentReport()">💾 Save Report</button>
     </div>
+  </div>
+
+  <!-- Saved Reports -->
+  <div class="card" style="margin-bottom:10px;" id="saved-reports-card">
+    <div class="card-head"><span class="card-title">📁 Saved Reports</span></div>
+    <div id="saved-reports-list"><div style="color:var(--text3);font-size:12px;padding:8px;">No saved reports yet. Generate and save a report.</div></div>
   </div>
 
   <!-- Summary Cards -->
@@ -1347,7 +1354,7 @@ const DEFAULT_USERS=[{name:'Owner',username:'owner',password:'bhairav@owner',rol
 function saveDB(){
   try{
     localStorage.setItem(DB_KEY,JSON.stringify({
-      employees,users,contracts,salaries,salesBills,purchaseBills,alertsList,ownerContact,attendanceLogs,uniformStock,uniformIssues
+      employees,users,contracts,salaries,salesBills,purchaseBills,alertsList,ownerContact,attendanceLogs,uniformStock,uniformIssues,savedReports
     }));
   }catch(e){console.warn('DB save failed',e);}
   // Auto-push to Drive on every change (debounced, silent)
@@ -1431,6 +1438,7 @@ function loadDB(){
     if(db.attendanceLogs)attendanceLogs=db.attendanceLogs;
     if(db.uniformStock)uniformStock=db.uniformStock;
     if(db.uniformIssues)uniformIssues=db.uniformIssues;
+    if(db.savedReports)savedReports=db.savedReports;
     // Ensure owner always exists
     if(!users.find(u=>u.username==='owner'))users.unshift(DEFAULT_USERS[0]);
   }catch(e){console.warn('DB load failed',e);}
@@ -1445,6 +1453,7 @@ const UNIFORM_SIZES=['30','32','34','36','38','40','42'];
 const UNIFORM_ITEMS=['Uniform','Shoes','Cap'];
 let uniformStock={};// {item_size: qty}
 let uniformIssues=[];// [{empId,empName,date,items:[{item,size,pairs}]}]
+let savedReports=[];
 let purchaseBills=[];
 let alertsList=[];
 let attendanceLogs=[];
@@ -1580,7 +1589,7 @@ function showScreen(id){
   if(id==='employees')renderEmpTable();
   if(id==='attendance')initAttendanceScreen();
   if(id==='salary')renderSalList();
-  if(id==='report')initReportScreen();
+  if(id==='report')initReportScreen();renderSavedReports();
   if(id==='contracts')renderContracts();
   if(id==='bills')renderBills();
   if(id==='alerts'){renderAlerts();loadContactFields();setTimeout(checkAndTriggerAlerts,500);}
@@ -2761,10 +2770,12 @@ function renderBills(){
           ?`<button class="pdf-view-btn" onclick="openStoredPdf('sales',${idx})">📄 View</button>`
           :`<span style="font-size:10px;color:var(--text3);">—</span>`;
         const totalAmt=parseFloat(b.amount)||0;
+        const tdsAmt=parseFloat(b.tds)||0;
+        const netReceivable=totalAmt-tdsAmt;
         let receivedAmt=0,pendingAmt=0;
-        if(b.status==='received'){receivedAmt=totalAmt;pendingAmt=0;}
-        else if(b.status==='partial'){receivedAmt=parseFloat(b.receivedAmount)||0;pendingAmt=totalAmt-receivedAmt;}
-        else{receivedAmt=0;pendingAmt=totalAmt;}
+        if(b.status==='received'){receivedAmt=netReceivable;pendingAmt=0;}
+        else if(b.status==='partial'){receivedAmt=parseFloat(b.receivedAmount)||0;pendingAmt=netReceivable-receivedAmt;}
+        else{receivedAmt=0;pendingAmt=netReceivable;}
         const selectStyle=b.status==='pending'?'background:#FFD5D5;color:#7f0000;font-weight:700;border:1.5px solid #DC2626;':b.status==='partial'?'background:#FFF176;color:#6B4700;font-weight:700;border:1.5px solid #D97706;':'background:#B9F6CA;color:#064E3B;font-weight:700;border:1.5px solid #16A34A;';
         return `<tr style="${rowStyle[b.status]||''}">
           <td>${i+1}</td>
@@ -2910,7 +2921,7 @@ function updateTDSHint(){
   const amt=parseFloat(document.getElementById('bf-amount').value)||0;
   const tds=parseFloat(document.getElementById('bf-tds').value)||0;
   const hint=document.getElementById('bf-tds-hint');
-  if(hint&&amt>0&&tds>0)hint.textContent='Net Receivable: ₹'+(amt-tds).toLocaleString('en-IN');
+  if(hint&&amt>0&&tds>0)hint.textContent='You will receive: ₹'+(amt-tds).toLocaleString('en-IN');
   else if(hint)hint.textContent='';
 }
 function updateReceivedAmountHint(){
@@ -4280,6 +4291,55 @@ function getEmpBasic(empName, empUsername){
   const emp = employees.find(e=>e.name&&e.name.toLowerCase()===empName.toLowerCase());
   if(emp && emp.rawSalary) return parseFloat(emp.rawSalary)||0;
   return 0;
+}
+
+function saveCurrentReport(){
+  const month=document.getElementById('rpt-month')?.value;
+  const year=document.getElementById('rpt-year')?.value;
+  const site=document.getElementById('rpt-site')?.value||'All Sites';
+  const html=document.getElementById('rpt-output')?.innerHTML;
+  const summary={
+    guards:document.getElementById('rpt-s-guards')?.textContent||'0',
+    days:document.getElementById('rpt-s-days')?.textContent||'0',
+    present:document.getElementById('rpt-s-present')?.textContent||'0'
+  };
+  if(!html||html.trim()===''){showToast('Generate a report first!');return;}
+  const months=['','January','February','March','April','May','June','July','August','September','October','November','December'];
+  const label=months[parseInt(month)]+' '+year+(site&&site!=='All Sites'?' · '+site:'');
+  const existing=savedReports.findIndex(r=>r.label===label);
+  const rec={label,month,year,site,summary,html,savedAt:new Date().toLocaleDateString('en-IN')};
+  if(existing>=0)savedReports[existing]=rec;
+  else savedReports.unshift(rec);
+  saveDB();renderSavedReports();
+  showToast('✅ Report saved: '+label);
+}
+
+function renderSavedReports(){
+  const el=document.getElementById('saved-reports-list');if(!el)return;
+  if(savedReports.length===0){el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px;">No saved reports yet.</div>';return;}
+  el.innerHTML=savedReports.map((r,i)=>`
+    <div style="border-bottom:1px solid var(--border);padding:10px 0;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-weight:700;font-size:13px;">📅 ${r.label}</div>
+        <div style="font-size:11px;color:var(--text3);">👷 ${r.summary.guards} guards · ✅ ${r.summary.present} attendances · Saved: ${r.savedAt}</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-outline btn-xs" onclick="viewSavedReport(${i})">👁 View</button>
+        <button class="del-btn" onclick="deleteSavedReport(${i})">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function viewSavedReport(i){
+  const r=savedReports[i];
+  const w=window.open('','_blank');
+  w.document.write('<html><head><title>'+r.label+'</title><style>body{font-family:sans-serif;padding:20px;}table{border-collapse:collapse;width:100%;}td,th{border:1px solid #ddd;padding:6px;font-size:12px;}th{background:#FF6B00;color:#fff;}</style></head><body><h2>'+r.label+'</h2>'+r.html+'</body></html>');
+  w.document.close();
+}
+
+function deleteSavedReport(i){
+  if(!confirm('Delete this saved report?'))return;
+  savedReports.splice(i,1);saveDB();renderSavedReports();showToast('Deleted.');
 }
 
 function generateReport(){
