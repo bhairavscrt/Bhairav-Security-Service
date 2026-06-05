@@ -614,7 +614,8 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
     <div class="card">
       <div class="card-head">
         <span class="card-title">📋 Attendance Log</span>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="markAllPresentToday()" style="background:#16A34A;border-color:#16A34A;">✅ All Present Today</button>
           <button id="qr-gen-btn" class="btn btn-outline btn-sm" onclick="showQRGenerator()">🖨 Generate QR</button>
           <button class="btn btn-outline btn-sm" onclick="generatePDF('attendance')">⬇ PDF</button>
         </div>
@@ -2459,6 +2460,22 @@ function submitCheckout(){
 }
 
 // ── Render Log ──
+function markAllPresentToday(){
+  const today=new Date().toISOString().split('T')[0];
+  const currentEmps=employees.filter(e=>e.status==='Current'||!e.status);
+  if(currentEmps.length===0){showToast('No current employees found!');return;}
+  let added=0,skipped=0;
+  currentEmps.forEach(e=>{
+    const already=attendanceLogs.find(l=>l.username===e.id&&l.date===today);
+    if(!already){
+      attendanceLogs.push({username:e.id,name:e.name,site:e.site||'—',date:today,time:new Date().toLocaleTimeString('en-IN'),type:'check-in',method:'manual'});
+      added++;
+    } else skipped++;
+  });
+  saveDB();renderAttLog();
+  showToast('✅ Marked '+added+' present today'+(skipped>0?' ('+skipped+' already marked)':'')+'!');
+}
+
 function renderAttLog(){
   const el=document.getElementById('att-log');
   const emptyEl=document.getElementById('att-empty');
