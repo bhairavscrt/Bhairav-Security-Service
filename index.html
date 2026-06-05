@@ -2530,34 +2530,53 @@ function renderAttLog(){
         </div>`).join('');
     }
     html += `</div>`;
-    html += `<div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;color:var(--text2);margin-bottom:8px;">📋 Full Attendance History</div>`;
+    // Current month register table
+    const now=new Date();
+    const curMonth=now.getMonth()+1;
+    const curYear=now.getFullYear();
+    const daysInMonth=new Date(curYear,curMonth,0).getDate();
+    const currentEmps=employees.filter(e=>e.status==='Current'||!e.status);
+    const monthLogs=attendanceLogs.filter(l=>{
+      if(!l.date)return false;
+      const d=new Date(l.date);
+      return d.getMonth()+1===curMonth&&d.getFullYear()===curYear;
+    });
+    const months=['','January','February','March','April','May','June','July','August','September','October','November','December'];
+    html+=`<div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;color:var(--saffron-dark);margin:10px 0 8px;">📋 ${months[curMonth]} ${curYear} — Attendance Register</div>`;
+    if(currentEmps.length===0){html+='<div style="color:var(--text3);font-size:12px;padding:8px;">No current employees.</div>';}
+    else{
+      const days=Array.from({length:daysInMonth},(_,i)=>i+1);
+      html+=`<div style="overflow-x:auto;"><table style="border-collapse:collapse;font-size:11px;min-width:600px;width:100%;">
+        <thead><tr style="background:var(--saffron);color:#fff;">
+          <th style="padding:6px 8px;text-align:left;position:sticky;left:0;background:var(--saffron);min-width:100px;">Employee</th>
+          ${days.map(d=>`<th style="padding:4px;text-align:center;min-width:24px;">${d}</th>`).join('')}
+          <th style="padding:6px 4px;text-align:center;">P</th>
+          <th style="padding:6px 4px;text-align:center;">A</th>
+        </tr></thead>
+        <tbody>${currentEmps.map((e,ei)=>{
+          let present=0;
+          const cells=days.map(d=>{
+            const dateStr=curYear+'-'+String(curMonth).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+            const log=monthLogs.find(l=>(l.username===e.id||l.name===e.name)&&l.date===dateStr);
+            const future=new Date(dateStr)>now;
+            if(future)return`<td style="padding:3px;text-align:center;background:#f9f9f9;color:#ccc;">·</td>`;
+            if(log){present++;return`<td style="padding:3px;text-align:center;background:#DCFCE7;color:#16A34A;font-weight:700;">P</td>`;}
+            return`<td style="padding:3px;text-align:center;background:#FEE2E2;color:#DC2626;font-weight:700;">A</td>`;
+          }).join('');
+          const pastDays=days.filter(d=>new Date(curYear+'-'+String(curMonth).padStart(2,'0')+'-'+String(d).padStart(2,'0'))<=now).length;
+          const absent=pastDays-present;
+          return`<tr style="border-bottom:1px solid var(--border);background:${ei%2===0?'#fff':'#fafafa'};">
+            <td style="padding:5px 8px;font-weight:600;position:sticky;left:0;background:${ei%2===0?'#fff':'#fafafa'};">${e.name}<div style="font-size:9px;color:var(--text3);">${e.site||'—'}</div></td>
+            ${cells}
+            <td style="padding:3px;text-align:center;font-weight:700;color:#16A34A;">${present}</td>
+            <td style="padding:3px;text-align:center;font-weight:700;color:#DC2626;">${absent}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>`;
+    }
   }
 
-  if(logs.length===0){
-    if(emptyEl)emptyEl.style.display='';
-    el.innerHTML=html;
-    return;
-  }
   if(emptyEl)emptyEl.style.display='none';
-
-  html += logs.map(l=>{
-    const selfieHtml=l.selfie
-      ?`<img src="${l.selfie}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--border);flex-shrink:0;" title="Selfie captured"/>`
-      :`<div style="width:36px;height:36px;border-radius:50%;background:var(--cream);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">👤</div>`;
-    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
-      ${selfieHtml}
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:600;">${l.name}</div>
-        <div style="font-size:10px;color:var(--text3);">${l.site}${l.location?' · '+l.location:''}</div>
-        <div style="font-size:10px;color:var(--text3);">${l.date} · In: ${l.checkIn}${l.checkOut?' · Out: '+l.checkOut:''}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
-        ${l.qrVerified?'<span class="badge b-green" style="font-size:9px;">QR ✓</span>':'<span class="badge b-gray" style="font-size:9px;">Manual</span>'}
-        <span class="badge ${l.status==='in'?'b-saffron':'b-blue'}" style="font-size:9px;">${l.status==='in'?'Checked In':'Checked Out'}</span>
-      </div>
-    </div>`;
-  }).join('');
-
   el.innerHTML=html;
 }
 
