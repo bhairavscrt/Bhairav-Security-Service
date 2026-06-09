@@ -834,7 +834,7 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
       <div class="tbl-wrap">
         <table>
           <thead><tr>
-            <th>#</th><th>Item Name</th><th>Purchaser Name</th><th>Bill No.</th><th>Amount (₹)</th><th>Paid</th><th>PDF</th><th>Actions</th>
+            <th>#</th><th>Item Name</th><th>Purchaser Name</th><th>Bill No.</th><th>Bill Date</th><th>Amount (₹)</th><th>Paid</th><th>PDF</th><th>Actions</th>
           </tr></thead>
           <tbody id="purchase-tbody"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3);">No purchase bills yet. Click "+ Add Bill" to add one.</td></tr></tbody>
         </table>
@@ -879,6 +879,7 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
           <div class="form-field full"><label>Item Name *</label><input id="bf-item" placeholder="Item / service name"/></div>
           <div class="form-field"><label>Purchaser Name *</label><input id="bf-purchaser" placeholder="Vendor / supplier name"/></div>
           <div class="form-field"><label>Bill Number *</label><input id="bf-billno" placeholder="e.g. BILL-001"/></div>
+          <div class="form-field"><label>Bill Date</label><input id="bf-pdate" type="date"/></div>
           <div class="form-field"><label>Amount (₹) *</label><input id="bf-pamount" type="number" placeholder="e.g. 5000"/></div>
           <div class="form-field"><label>Paid?</label><select id="bf-paid"><option value="yes">Yes – Paid</option><option value="no">No – Pending</option></select></div>
           <div class="form-field full">
@@ -2900,7 +2901,7 @@ function renderBills(){
   const pf=purchaseBills.filter(b=>!q||(b.item||'').toLowerCase().includes(q)||(b.purchaser||'').toLowerCase().includes(q)||(b.billno||'').toLowerCase().includes(q));
   const ptb=document.getElementById('purchase-tbody');
   if(ptb){
-    if(pf.length===0){ptb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3);">'+(purchaseBills.length===0?'No purchase bills yet.':'No bills match.')+'</td></tr>';}
+    if(pf.length===0){ptb.innerHTML='<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text3);">'+(purchaseBills.length===0?'No purchase bills yet.':'No bills match.')+'</td></tr>';}
     else{
       ptb.innerHTML=pf.map((b,i)=>{
         const idx=purchaseBills.indexOf(b);
@@ -2912,6 +2913,7 @@ function renderBills(){
           <td style="font-weight:600;">${b.item}</td>
           <td>${b.purchaser}</td>
           <td style="font-family:monospace;font-size:11px;">${b.billno}</td>
+          <td style="font-size:11px;">${b.date||'—'}</td>
           <td>₹${Number(b.amount).toLocaleString('en-IN')}</td>
           <td>
             <select class="status-sel" onchange="updatePurchaseBillStatus(${idx},this.value)" style="${b.paid==='yes'?'background:#B9F6CA;color:#064E3B;font-weight:700;border:1.5px solid #16A34A;':'background:#FFD5D5;color:#7f0000;font-weight:700;border:1.5px solid #DC2626;'}">
@@ -2993,6 +2995,7 @@ function editBill(type,i){
     document.getElementById('bf-item').value=b.item||'';
     document.getElementById('bf-purchaser').value=b.purchaser||'';
     document.getElementById('bf-billno').value=b.billno||'';
+    document.getElementById('bf-pdate').value=b.date||'';
     document.getElementById('bf-pamount').value=b.amount||'';
     document.getElementById('bf-paid').value=b.paid||'no';
     if(b.pdfData){
@@ -3050,7 +3053,7 @@ function saveBill(){
     const amount=document.getElementById('bf-pamount').value;
     if(!item||!purchaser||!billno||!amount){showToast('All fields are required.');return;}
     const pdfInfo=pendingBillPdf.purchase;
-    const rec={item,purchaser,billno,amount,paid:document.getElementById('bf-paid').value,pdfData:pdfInfo?pdfInfo.data:null,pdfName:pdfInfo?pdfInfo.name:null};
+    const rec={item,purchaser,billno,date:document.getElementById('bf-pdate').value,amount,paid:document.getElementById('bf-paid').value,pdfData:pdfInfo?pdfInfo.data:null,pdfName:pdfInfo?pdfInfo.name:null};
     if(editIdx!=='')purchaseBills[parseInt(editIdx)]=rec;else purchaseBills.push(rec);
   }
   cancelBillForm();renderBills();saveDB();showToast('Bill saved!');
