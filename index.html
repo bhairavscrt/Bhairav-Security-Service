@@ -2489,12 +2489,13 @@ function autoGenerateMonthlyReport(){
   if(savedReports.find(r=>r.label===label))return;// already saved
   const daysInMonth=new Date(prevYear,prevMonth,0).getDate();
   const days=Array.from({length:daysInMonth},(_,i)=>i+1);
-  const currentEmps=employees.filter(e=>e.status==='Current'||!e.status);
   const monthLogs=attendanceLogs.filter(l=>{
     if(!l.date)return false;
     const d=new Date(l.date);
     return d.getMonth()+1===prevMonth&&d.getFullYear()===prevYear;
   });
+  const empIdsWithLogs=new Set(monthLogs.map(l=>l.username));
+  const currentEmps=employees.filter(e=>e.status==='Current'||!e.status||empIdsWithLogs.has(e.id));
   let tableRows=currentEmps.map(e=>{
     let present=0;
     const cells=days.map(d=>{
@@ -2590,12 +2591,14 @@ function renderAttLog(){
     const curMonth=now.getMonth()+1;
     const curYear=now.getFullYear();
     const daysInMonth=new Date(curYear,curMonth,0).getDate();
-    const currentEmps=employees.filter(e=>e.status==='Current'||!e.status);
     const monthLogs=attendanceLogs.filter(l=>{
       if(!l.date)return false;
       const d=new Date(l.date);
       return d.getMonth()+1===curMonth&&d.getFullYear()===curYear;
     });
+    // Show Current employees + Ex employees who have ANY log this month
+    const empIdsWithLogsThisMonth=new Set(monthLogs.map(l=>l.username));
+    const currentEmps=employees.filter(e=>e.status==='Current'||!e.status||empIdsWithLogsThisMonth.has(e.id));
     const months=['','January','February','March','April','May','June','July','August','September','October','November','December'];
     html+=`<div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;color:var(--saffron-dark);margin:10px 0 8px;">📋 ${months[curMonth]} ${curYear} — Attendance Register</div>`;
     if(currentEmps.length===0){html+='<div style="color:var(--text3);font-size:12px;padding:8px;">No current employees.</div>';}
@@ -2621,7 +2624,7 @@ function renderAttLog(){
           const pastDays=days.filter(d=>new Date(curYear+'-'+String(curMonth).padStart(2,'0')+'-'+String(d).padStart(2,'0'))<=now).length;
           const absent=pastDays-present;
           return`<tr style="border-bottom:1px solid var(--border);background:${ei%2===0?'#fff':'#fafafa'};">
-            <td style="padding:5px 8px;font-weight:600;position:sticky;left:0;background:${ei%2===0?'#fff':'#fafafa'};">${e.name}<div style="font-size:9px;color:var(--text3);">${e.site||'—'}</div></td>
+            <td style="padding:5px 8px;font-weight:600;position:sticky;left:0;background:${ei%2===0?'#fff':'#fafafa'};">${e.name}${e.status==='Ex'?'<span style="background:#F3F4F6;color:#6B7280;font-size:9px;padding:1px 4px;border-radius:4px;margin-left:4px;">Ex</span>':''}<div style="font-size:9px;color:var(--text3);">${e.site||'—'}</div></td>
             ${cells}
             <td style="padding:3px;text-align:center;font-weight:700;color:#16A34A;">${present}</td>
             <td style="padding:3px;text-align:center;font-weight:700;color:#DC2626;">${absent}</td>
