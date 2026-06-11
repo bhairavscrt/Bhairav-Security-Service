@@ -1262,7 +1262,7 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
           <div><label class="form-label">Item</label>
             <select id="us-item" class="form-input" onchange="uUpdateSizeVis()">
-              <option>Uniform</option><option>Shoes</option><option>Cap</option>
+              <option>Uniform</option><option>Shirt</option><option>Pant</option><option>Shoes</option><option>Cap</option>
             </select>
           </div>
           <div id="us-size-wrap"><label class="form-label">Size</label>
@@ -1497,7 +1497,7 @@ let contracts=[];
 let salaries=[];
 let salesBills=[];
 const UNIFORM_SIZES=['30','32','34','36','38','40','42'];
-const UNIFORM_ITEMS=['Uniform','Shoes','Cap'];
+const UNIFORM_ITEMS=['Uniform','Shirt','Pant','Shoes','Cap'];
 let uniformStock={};// {item_size: qty}
 let uniformIssues=[];// [{empId,empName,date,items:[{item,size,pairs}]}]
 let savedReports=[];
@@ -1928,21 +1928,15 @@ function renderUniformStock(){
     });
   });
   const rows=[];
-  // Uniform by size
-  UNIFORM_SIZES.forEach(s=>{
-    const k='Uniform_'+s;
-    const bought=uniformStock[k]||0;
-    const give=issued[k]||0;
-    const bal=bought-give;
-    if(bought>0||give>0) rows.push({item:'Uniform',size:s,bought,give,bal});
-  });
-  // Shoes by size
-  UNIFORM_SIZES.forEach(s=>{
-    const k='Shoes_'+s;
-    const bought=uniformStock[k]||0;
-    const give=issued[k]||0;
-    const bal=bought-give;
-    if(bought>0||give>0) rows.push({item:'Shoes',size:s,bought,give,bal});
+  // Uniform, Shirt, Pant, Shoes by size
+  ['Uniform','Shirt','Pant','Shoes'].forEach(item=>{
+    UNIFORM_SIZES.forEach(s=>{
+      const k=item+'_'+s;
+      const bought=uniformStock[k]||0;
+      const give=issued[k]||0;
+      const bal=bought-give;
+      if(bought>0||give>0) rows.push({item,size:s,bought,give,bal});
+    });
   });
   // Cap
   const kc='Cap_OneSize';
@@ -1950,22 +1944,18 @@ function renderUniformStock(){
   if(bc>0||gc>0) rows.push({item:'Cap',size:'—',bought:bc,give:gc,bal:bc-gc});
 
   if(rows.length===0){el.innerHTML='<div style="text-align:center;color:var(--text3);padding:20px;">No stock added yet. Add stock above.</div>';return;}
-  el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12px;">
-    <thead><tr style="background:var(--saffron-glow);">
-      <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border2);">Item</th>
-      <th style="padding:8px;text-align:center;border-bottom:1px solid var(--border2);">Size</th>
-      <th style="padding:8px;text-align:center;border-bottom:1px solid var(--border2);">Bought</th>
-      <th style="padding:8px;text-align:center;border-bottom:1px solid var(--border2);">Issued</th>
-      <th style="padding:8px;text-align:center;border-bottom:1px solid var(--border2);">Balance</th>
+  el.innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Item</th><th>Size</th><th>Bought</th><th>Issued</th><th>Balance</th>
     </tr></thead>
-    <tbody>${rows.map(r=>`<tr style="border-bottom:1px solid var(--border);">
-      <td style="padding:7px 8px;font-weight:600;">${r.item}</td>
-      <td style="padding:7px 8px;text-align:center;">${r.size}</td>
-      <td style="padding:7px 8px;text-align:center;color:#16A34A;font-weight:700;">${r.bought}</td>
-      <td style="padding:7px 8px;text-align:center;color:#DC2626;font-weight:700;">${r.give}</td>
-      <td style="padding:7px 8px;text-align:center;font-weight:700;color:${r.bal<0?'#DC2626':r.bal===0?'#6B7280':'#1D4ED8'};">${r.bal}</td>
+    <tbody>${rows.map(r=>`<tr>
+      <td style="font-weight:600;">${r.item}</td>
+      <td style="text-align:center;">${r.size}</td>
+      <td style="text-align:center;color:#16A34A;font-weight:700;">${r.bought}</td>
+      <td style="text-align:center;color:#DC2626;font-weight:700;">${r.give}</td>
+      <td style="text-align:center;font-weight:700;color:${r.bal<0?'#DC2626':r.bal===0?'#6B7280':'#1D4ED8'};">${r.bal}</td>
     </tr>`).join('')}</tbody>
-  </table>`;
+  </table></div>`;
 }
 
 function uPopulateEmpSelect(){
@@ -1985,20 +1975,16 @@ function uBuildIssueItems(){
       <th style="padding:8px;text-align:center;">Issue?</th>
     </tr></thead>
     <tbody>
-      ${UNIFORM_SIZES.map(s=>`
+      ${['Uniform','Shirt','Pant','Shoes'].map(item=>{
+        const icon={Uniform:'👕',Shirt:'👔',Pant:'👖',Shoes:'👟'}[item];
+        return UNIFORM_SIZES.map(s=>`
       <tr style="border-bottom:1px solid var(--border);">
-        <td style="padding:6px 8px;">👕 Uniform</td>
+        <td style="padding:6px 8px;">${icon} ${item}</td>
         <td style="padding:6px 8px;text-align:center;font-weight:700;">${s}</td>
-        <td style="padding:6px 8px;text-align:center;"><input type="number" id="uiq-Uniform_${s}" min="0" value="0" style="width:50px;text-align:center;border:1px solid var(--border);border-radius:6px;padding:3px;"></td>
-        <td style="padding:6px 8px;text-align:center;"><input type="checkbox" id="uic-Uniform_${s}"></td>
-      </tr>`).join('')}
-      ${UNIFORM_SIZES.map(s=>`
-      <tr style="border-bottom:1px solid var(--border);">
-        <td style="padding:6px 8px;">👟 Shoes</td>
-        <td style="padding:6px 8px;text-align:center;font-weight:700;">${s}</td>
-        <td style="padding:6px 8px;text-align:center;"><input type="number" id="uiq-Shoes_${s}" min="0" value="0" style="width:50px;text-align:center;border:1px solid var(--border);border-radius:6px;padding:3px;"></td>
-        <td style="padding:6px 8px;text-align:center;"><input type="checkbox" id="uic-Shoes_${s}"></td>
-      </tr>`).join('')}
+        <td style="padding:6px 8px;text-align:center;"><input type="number" id="uiq-${item}_${s}" min="0" value="0" style="width:50px;text-align:center;border:1px solid var(--border);border-radius:6px;padding:3px;"></td>
+        <td style="padding:6px 8px;text-align:center;"><input type="checkbox" id="uic-${item}_${s}"></td>
+      </tr>`).join('');
+      }).join('')}
       <tr>
         <td style="padding:6px 8px;">🧢 Cap</td>
         <td style="padding:6px 8px;text-align:center;">—</td>
@@ -2008,7 +1994,7 @@ function uBuildIssueItems(){
     </tbody>
   </table></div>`;
   // Auto-check when qty entered
-  ['Uniform','Shoes'].forEach(item=>{
+  ['Uniform','Shirt','Pant','Shoes'].forEach(item=>{
     UNIFORM_SIZES.forEach(s=>{
       const qEl=document.getElementById('uiq-'+item+'_'+s);
       if(qEl)qEl.oninput=function(){if(parseInt(this.value)>0)document.getElementById('uic-'+item+'_'+s).checked=true;};
@@ -2023,7 +2009,7 @@ function issueUniform(){
   const emp=employees.find(e=>e.id===empId);if(!emp){showToast('Select employee!');return;}
   const date=document.getElementById('ui-date').value||new Date().toISOString().split('T')[0];
   const items=[];
-  ['Uniform','Shoes'].forEach(item=>{
+  ['Uniform','Shirt','Pant','Shoes'].forEach(item=>{
     UNIFORM_SIZES.forEach(s=>{
       const cb=document.getElementById('uic-'+item+'_'+s);
       const qty=parseInt(document.getElementById('uiq-'+item+'_'+s)?.value)||0;
@@ -2061,7 +2047,7 @@ function renderUniformHistory(){
         <th style="padding:5px 8px;text-align:center;">Pairs/Qty</th>
       </tr></thead>
       <tbody>${r.items.map(it=>`<tr style="border-bottom:1px solid var(--border);">
-        <td style="padding:5px 8px;">${it.item==='Uniform'?'👕':it.item==='Shoes'?'👟':'🧢'} ${it.item}</td>
+        <td style="padding:5px 8px;">${({Uniform:'👕',Shirt:'👔',Pant:'👖',Shoes:'👟',Cap:'🧢'})[it.item]||'📦'} ${it.item}</td>
         <td style="padding:5px 8px;text-align:center;font-weight:700;">${it.size==='OneSize'?'—':it.size}</td>
         <td style="padding:5px 8px;text-align:center;font-weight:700;color:var(--saffron-dark);">${it.pairs}</td>
       </tr>`).join('')}</tbody>
