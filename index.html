@@ -753,6 +753,15 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
 
 <!-- ─── CONTRACTS ─── -->
 <div class="screen" id="screen-contracts">
+  <!-- FOLLOW-UP LEADS -->
+  <div class="card" style="margin-bottom:10px;">
+    <div class="card-head">
+      <span class="card-title">📞 Follow-up Reminders</span>
+      <button class="btn btn-primary btn-sm" onclick="document.getElementById('lead-modal').classList.remove('hidden');document.getElementById('lead-modal').dataset.editIdx='';">+ Add Follow-up</button>
+    </div>
+    <div id="leads-list"><div style="color:var(--text3);font-size:12px;padding:8px;">No follow-ups yet. Add a company you met for future contract.</div></div>
+  </div>
+
   <div class="card">
     <div class="card-head">
       <span class="card-title">Contracts</span>
@@ -794,6 +803,30 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
       <div style="display:flex;gap:8px;">
         <button class="btn btn-primary" onclick="saveContract()">💾 Save Contract</button>
         <button class="btn btn-outline" onclick="cancelContractForm()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Follow-up Lead Modal -->
+<div class="modal-overlay hidden" id="lead-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">📞 Follow-up Reminder</span>
+      <button class="modal-close" onclick="document.getElementById('lead-modal').classList.add('hidden')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field full"><label>Company Name *</label><input id="lf-company" placeholder="Company name"/></div>
+        <div class="form-field"><label>Contact Person</label><input id="lf-contact" placeholder="Name"/></div>
+        <div class="form-field"><label>Phone</label><input id="lf-phone" placeholder="+91 XXXXX XXXXX"/></div>
+        <div class="form-field full"><label>Notes</label><input id="lf-notes" placeholder="e.g. Met at office, asked to contact after 6 months"/></div>
+        <div class="form-field full"><label>Follow-up Date *</label><input id="lf-date" type="date"/></div>
+      </div>
+      <div id="lf-err" style="font-size:12px;color:var(--red);margin-top:8px;"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn btn-primary" onclick="saveLead()">💾 Save</button>
+        <button class="btn btn-outline" onclick="document.getElementById('lead-modal').classList.add('hidden')">Cancel</button>
       </div>
     </div>
   </div>
@@ -1362,7 +1395,7 @@ const DEFAULT_USERS=[{name:'Owner',username:'owner',password:'bhairav@owner',rol
 function saveDB(){
   try{
     localStorage.setItem(DB_KEY,JSON.stringify({
-      employees,users,contracts,salaries,salesBills,purchaseBills,alertsList,ownerContact,attendanceLogs,uniformStock,uniformIssues,savedReports
+      employees,users,contracts,salaries,salesBills,purchaseBills,alertsList,ownerContact,attendanceLogs,uniformStock,uniformIssues,savedReports,followUpLeads
     }));
   }catch(e){console.warn('DB save failed',e);}
   // Auto-push to Drive on every change (debounced, silent)
@@ -1447,6 +1480,7 @@ function loadDB(){
     if(db.uniformStock)uniformStock=db.uniformStock;
     if(db.uniformIssues)uniformIssues=db.uniformIssues;
     if(db.savedReports)savedReports=db.savedReports;
+    if(db.followUpLeads)followUpLeads=db.followUpLeads;
     // Ensure owner always exists
     if(!users.find(u=>u.username==='owner'))users.unshift(DEFAULT_USERS[0]);
   }catch(e){console.warn('DB load failed',e);}
@@ -1462,6 +1496,7 @@ const UNIFORM_ITEMS=['Uniform','Shoes','Cap'];
 let uniformStock={};// {item_size: qty}
 let uniformIssues=[];// [{empId,empName,date,items:[{item,size,pairs}]}]
 let savedReports=[];
+let followUpLeads=[];
 let purchaseBills=[];
 let alertsList=[];
 let attendanceLogs=[];
@@ -1544,6 +1579,7 @@ function doLogin(){
   setTimeout(checkAndTriggerAlerts,1500);
   setTimeout(checkBirthdays,2500);
   setTimeout(autoGenerateMonthlyReport,3000);
+  setTimeout(checkLeadAlerts,3500);
   // Auto-pull latest data from Drive on login if Drive is configured
   setTimeout(autoSyncOnLogin, 1000);
   // Check if monthly report needs to be generated (1st of month)
@@ -1599,7 +1635,7 @@ function showScreen(id){
   if(id==='attendance')initAttendanceScreen();renderSavedReports();
   if(id==='salary')renderSalList();
   if(id==='report')initReportScreen();renderSavedReports();
-  if(id==='contracts')renderContracts();
+  if(id==='contracts'){renderContracts();renderLeads();}
   if(id==='bills')renderBills();
   if(id==='alerts'){renderAlerts();loadContactFields();setTimeout(checkAndTriggerAlerts,500);}
   if(id==='backup')initBackupScreen();
@@ -2764,6 +2800,79 @@ function showAddSalForm(){
 
 
 // ═══ CONTRACTS ═══
+function renderLeads(){
+  const el=document.getElementById('leads-list');if(!el)return;
+  if(followUpLeads.length===0){el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px;">No follow-ups yet. Add a company you met for future contract.</div>';return;}
+  const today=new Date();today.setHours(0,0,0,0);
+  const sorted=[...followUpLeads].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  el.innerHTML=sorted.map((l)=>{
+    const i=followUpLeads.indexOf(l);
+    const fDate=new Date(l.date);
+    const days=Math.ceil((fDate-today)/(1000*60*60*24));
+    let badge,bg;
+    if(days<0){badge='⏰ Overdue';bg='#FEE2E2';}
+    else if(days===0){badge='📅 Today!';bg='#FFF3E0';}
+    else if(days<=7){badge='🔔 in '+days+'d';bg='#FFF3E0';}
+    else{badge=l.date;bg='#F0FDF4';}
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-weight:700;font-size:13px;">${l.company}</div>
+        <div style="font-size:11px;color:var(--text3);">${l.contact||''}${l.phone?' · '+l.phone:''}</div>
+        ${l.notes?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">📝 ${l.notes}</div>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="background:${bg};font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;white-space:nowrap;">${badge}</span>
+        <button class="edit-btn" onclick="editLead(${i})">Edit</button>
+        <button class="del-btn" onclick="deleteLead(${i})">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function editLead(i){
+  const l=followUpLeads[i];
+  document.getElementById('lf-company').value=l.company||'';
+  document.getElementById('lf-contact').value=l.contact||'';
+  document.getElementById('lf-phone').value=l.phone||'';
+  document.getElementById('lf-notes').value=l.notes||'';
+  document.getElementById('lf-date').value=l.date||'';
+  document.getElementById('lead-modal').dataset.editIdx=i;
+  document.getElementById('lead-modal').classList.remove('hidden');
+}
+
+function deleteLead(i){
+  if(!confirm('Delete this follow-up?'))return;
+  followUpLeads.splice(i,1);saveDB();renderLeads();showToast('Deleted.');
+}
+
+function saveLead(){
+  const company=document.getElementById('lf-company').value.trim();
+  const date=document.getElementById('lf-date').value;
+  if(!company||!date){document.getElementById('lf-err').textContent='Company name and follow-up date required.';return;}
+  const rec={company,contact:document.getElementById('lf-contact').value,phone:document.getElementById('lf-phone').value,notes:document.getElementById('lf-notes').value,date};
+  const editIdx=document.getElementById('lead-modal').dataset.editIdx;
+  if(editIdx!==undefined&&editIdx!=='')followUpLeads[parseInt(editIdx)]=rec;
+  else followUpLeads.push(rec);
+  document.getElementById('lead-modal').classList.add('hidden');
+  ['lf-company','lf-contact','lf-phone','lf-notes','lf-date'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('lf-err').textContent='';
+  saveDB();renderLeads();showToast('✅ Follow-up saved!');
+}
+
+function checkLeadAlerts(){
+  const today=new Date();today.setHours(0,0,0,0);
+  followUpLeads.forEach(l=>{
+    const fDate=new Date(l.date);
+    const days=Math.ceil((fDate-today)/(1000*60*60*24));
+    if(days>=0&&days<=2){
+      const key='leadack:'+l.company+l.date;
+      if(!localStorage.getItem(key)){
+        queueAlertPopup({type:days===0?'urgent':'warning',msg:'📞 Follow-up: '+l.company,sub:(days===0?'Due TODAY!':'Due in '+days+' day(s)')+' · '+(l.notes||'Time to contact for contract.')});
+      }
+    }
+  });
+}
+
 function renderContracts(){
   const q=(document.getElementById('c-search')?document.getElementById('c-search').value:'').toLowerCase();
   const filtered=contracts.filter(c=>!q||c.company.toLowerCase().includes(q)||(c.location||'').toLowerCase().includes(q));
