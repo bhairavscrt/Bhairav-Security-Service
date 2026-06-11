@@ -1946,7 +1946,7 @@ function renderUniformStock(){
   if(rows.length===0){el.innerHTML='<div style="text-align:center;color:var(--text3);padding:20px;">No stock added yet. Add stock above.</div>';return;}
   el.innerHTML=`<div class="tbl-wrap"><table>
     <thead><tr>
-      <th>Item</th><th>Size</th><th>Bought</th><th>Issued</th><th>Balance</th>
+      <th>Item</th><th style="text-align:center;">Size</th><th style="text-align:center;">Bought</th><th style="text-align:center;">Issued</th><th style="text-align:center;">Balance</th>
     </tr></thead>
     <tbody>${rows.map(r=>`<tr>
       <td style="font-weight:600;">${r.item}</td>
@@ -1966,13 +1966,13 @@ function uPopulateEmpSelect(){
 function uBuildIssueItems(){
   const wrap=document.getElementById('ui-items-wrap');if(!wrap)return;
   wrap.innerHTML=`
-  <div style="overflow-x:auto;">
-  <table style="width:100%;border-collapse:collapse;font-size:12px;">
-    <thead><tr style="background:var(--saffron-glow);">
-      <th style="padding:8px;text-align:left;">Item</th>
-      <th style="padding:8px;text-align:center;">Size</th>
-      <th style="padding:8px;text-align:center;">Pairs/Qty</th>
-      <th style="padding:8px;text-align:center;">Issue?</th>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr>
+      <th>Item</th>
+      <th style="text-align:center;">Size</th>
+      <th style="text-align:center;">Pairs/Qty</th>
+      <th style="text-align:center;">Issue?</th>
     </tr></thead>
     <tbody>
       ${['Uniform','Shirt','Pant','Shoes'].map(item=>{
@@ -2040,18 +2040,18 @@ function renderUniformHistory(){
       </div>
       <button class="del-btn" onclick="deleteUniformIssue(${uniformIssues.length-1-i})">🗑</button>
     </div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;">
-      <thead><tr style="background:var(--saffron-glow);">
-        <th style="padding:5px 8px;text-align:left;">Item</th>
-        <th style="padding:5px 8px;text-align:center;">Size</th>
-        <th style="padding:5px 8px;text-align:center;">Pairs/Qty</th>
+    <div class="tbl-wrap"><table>
+      <thead><tr>
+        <th>Item</th>
+        <th style="text-align:center;">Size</th>
+        <th style="text-align:center;">Pairs/Qty</th>
       </tr></thead>
-      <tbody>${r.items.map(it=>`<tr style="border-bottom:1px solid var(--border);">
-        <td style="padding:5px 8px;">${({Uniform:'👕',Shirt:'👔',Pant:'👖',Shoes:'👟',Cap:'🧢'})[it.item]||'📦'} ${it.item}</td>
-        <td style="padding:5px 8px;text-align:center;font-weight:700;">${it.size==='OneSize'?'—':it.size}</td>
-        <td style="padding:5px 8px;text-align:center;font-weight:700;color:var(--saffron-dark);">${it.pairs}</td>
+      <tbody>${r.items.map(it=>`<tr>
+        <td>${({Uniform:'👕',Shirt:'👔',Pant:'👖',Shoes:'👟',Cap:'🧢'})[it.item]||'📦'} ${it.item}</td>
+        <td style="text-align:center;font-weight:700;">${it.size==='OneSize'?'—':it.size}</td>
+        <td style="text-align:center;font-weight:700;color:var(--saffron-dark);">${it.pairs}</td>
       </tr>`).join('')}</tbody>
-    </table>
+    </table></div>
   </div>`).join('');
 }
 
