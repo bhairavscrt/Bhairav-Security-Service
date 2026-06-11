@@ -1707,7 +1707,7 @@ function renderEmpTable(){
       <td>${e.site||'—'}</td>
       <td><span class="badge b-blue" style="font-size:9px;">${e.cat}</span></td>
       <td><span class="badge ${e.status==='Current'?'b-green':'b-gray'}">${e.status}</span></td>
-      <td style="white-space:nowrap;font-size:11px;">${e.doj||'—'}</td>
+      <td style="white-space:nowrap;font-size:11px;">${fmtDate(e.doj)}</td>
       <td>${e.pdfName?`<span style="font-size:10px;color:var(--blue);">📄 ${e.pdfName}</span>`:'<span style="font-size:10px;color:var(--text3);">No file</span>'}</td>
       <td>
         <div style="display:flex;gap:4px;flex-wrap:wrap;">
@@ -1867,7 +1867,7 @@ function showIDCard(id){
           <div style="font-size:10px;color:#9C6B3C;">Site</div><div style="font-size:10px;font-weight:600;color:#1A0A00;">${e.site||'—'}</div>
           <div style="font-size:10px;color:#9C6B3C;">Phone</div><div style="font-size:10px;font-weight:600;color:#1A0A00;">${e.phone||'—'}</div>
           <div style="font-size:10px;color:#9C6B3C;">Blood</div><div style="font-size:10px;font-weight:700;color:#DC2626;">${e.blood||'—'}</div>
-          <div style="font-size:10px;color:#9C6B3C;">Joined</div><div style="font-size:10px;font-weight:600;color:#1A0A00;">${e.doj||'—'}</div>
+          <div style="font-size:10px;color:#9C6B3C;">Joined</div><div style="font-size:10px;font-weight:600;color:#1A0A00;">${fmtDate(e.doj)}</div>
           <div style="font-size:10px;color:#9C6B3C;">Shift</div><div style="font-size:10px;font-weight:600;color:#1A0A00;">${e.shift||'—'}</div>
         </div>
       </div>
@@ -2050,7 +2050,7 @@ function renderUniformHistory(){
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
       <div>
         <div style="font-weight:700;font-size:14px;">👷 ${r.empName}</div>
-        <div style="font-size:11px;color:var(--text3);">📅 ${r.date}</div>
+        <div style="font-size:11px;color:var(--text3);">📅 ${fmtDate(r.date)}</div>
       </div>
       <button class="del-btn" onclick="deleteUniformIssue(${uniformIssues.length-1-i})">🗑</button>
     </div>
@@ -2149,7 +2149,7 @@ function showProfile(id){
     <div class="profile-section">
       <div class="profile-section-title">Personal</div>
       <div class="profile-grid">
-        <div class="pf"><div class="pf-l">DOB</div><div class="pf-v">${e.dob}</div></div>
+        <div class="pf"><div class="pf-l">DOB</div><div class="pf-v">${fmtDate(e.dob)}</div></div>
         <div class="pf"><div class="pf-l">Age</div><div class="pf-v">${e.age} yrs</div></div>
         <div class="pf"><div class="pf-l">Gender</div><div class="pf-v">${e.gender}</div></div>
         <div class="pf"><div class="pf-l">Marital</div><div class="pf-v">${e.marital}</div></div>
@@ -2162,7 +2162,7 @@ function showProfile(id){
       <div class="profile-grid">
         <div class="pf"><div class="pf-l">Site</div><div class="pf-v">${e.site}</div></div>
         <div class="pf"><div class="pf-l">Shift</div><div class="pf-v">${e.shift}</div></div>
-        <div class="pf"><div class="pf-l">Joining</div><div class="pf-v">${e.doj}</div></div>
+        <div class="pf"><div class="pf-l">Joining</div><div class="pf-v">${fmtDate(e.doj)}</div></div>
         <div class="pf"><div class="pf-l">Salary</div><div class="pf-v">${e.salary}</div></div>
       </div>
     </div>
@@ -2825,7 +2825,7 @@ function renderLeads(){
       <td>${l.contact||'—'}</td>
       <td>${l.phone||'—'}</td>
       <td>${l.notes||'—'}</td>
-      <td>${l.date}</td>
+      <td>${fmtDate(l.date)}</td>
       <td>${badge}</td>
       <td><div style="display:flex;gap:4px;">
         <button class="edit-btn" onclick="editLead(${i})">Edit</button>
@@ -2889,8 +2889,8 @@ function renderContracts(){
     <tr>
       <td style="color:var(--text3);">${i+1}</td>
       <td style="font-weight:600;">${c.company}</td>
-      <td>${c.start||'—'}</td>
-      <td>${c.end||'—'}</td>
+      <td>${fmtDate(c.start)}</td>
+      <td>${fmtDate(c.end)}</td>
       <td>${c.guards||'—'}</td>
       <td>${c.location||'—'}</td>
       <td>${c.hr||'—'}</td>
@@ -2991,7 +2991,7 @@ function renderBills(){
           <td>${i+1}</td>
           <td style="font-weight:600;">${b.company}</td>
           <td style="font-family:monospace;font-size:11px;">${b.invoice}</td>
-          <td>${b.date||'—'}</td>
+          <td>${fmtDate(b.date)}</td>
           <td>₹${Number(b.amount).toLocaleString('en-IN')}</td>
           <td style="color:#DC2626;font-weight:600;">${b.tds>0?'₹'+Number(b.tds).toLocaleString('en-IN'):'—'}</td>
           <td style="color:#16A34A;font-weight:600;">${b.tds>0?'₹'+(Number(b.amount)-Number(b.tds)).toLocaleString('en-IN'):'—'}</td>
@@ -3028,7 +3028,7 @@ function renderBills(){
           <td style="font-weight:600;">${b.item}</td>
           <td>${b.purchaser}</td>
           <td style="font-family:monospace;font-size:11px;">${b.billno}</td>
-          <td style="font-size:11px;">${b.date||'—'}</td>
+          <td style="font-size:11px;">${fmtDate(b.date)}</td>
           <td>₹${Number(b.amount).toLocaleString('en-IN')}</td>
           <td>
             <select class="status-sel" onchange="updatePurchaseBillStatus(${idx},this.value)" style="${b.paid==='yes'?'background:#B9F6CA;color:#064E3B;font-weight:700;border:1.5px solid #16A34A;':'background:#FFD5D5;color:#7f0000;font-weight:700;border:1.5px solid #DC2626;'}">
@@ -3475,8 +3475,8 @@ function renderAlerts(){
   contracts.forEach(c=>{
     if(c.end&&c.status!=='expired'){
       const days=Math.ceil((new Date(c.end)-new Date())/(1000*60*60*24));
-      if(days<0)autoAlerts.push({type:'urgent',msg:c.company+' contract has EXPIRED!',sub:'End: '+c.end+' · '+c.guards+' guards · ₹'+(c.amount?Number(c.amount).toLocaleString('en-IN'):'--')+'/mo'});
-      else if(days<=60&&days>=0)autoAlerts.push({type:days<=7?'urgent':'warning',msg:c.company+' contract expires in '+days+' day'+(days===1?'':'s'),sub:'End: '+c.end+' · '+c.guards+' guards · ₹'+(c.amount?Number(c.amount).toLocaleString('en-IN'):'--')+'/mo'});
+      if(days<0)autoAlerts.push({type:'urgent',msg:c.company+' contract has EXPIRED!',sub:'End: '+fmtDate(c.end)+' · '+c.guards+' guards · ₹'+(c.amount?Number(c.amount).toLocaleString('en-IN'):'--')+'/mo'});
+      else if(days<=60&&days>=0)autoAlerts.push({type:days<=7?'urgent':'warning',msg:c.company+' contract expires in '+days+' day'+(days===1?'':'s'),sub:'End: '+fmtDate(c.end)+' · '+c.guards+' guards · ₹'+(c.amount?Number(c.amount).toLocaleString('en-IN'):'--')+'/mo'});
     }
   });
   renderedAlerts=[...alertsList,...autoAlerts];
@@ -3724,12 +3724,12 @@ function generatePDF(type){
   } else if(type==='salary'||type==='salaryslip'){
     content=`<h2>Salary Records</h2><table><tr><th>#</th><th>Name</th><th>ID</th><th>Month</th><th>Basic</th><th>OT</th><th>Allowance</th><th>PF</th><th>Advance</th><th>Net</th><th>Status</th></tr>`+salaries.map((s,i)=>{const net=(parseFloat(s.basic)||0)+(parseFloat(s.ot)||0)+(parseFloat(s.allow)||0)-(parseFloat(s.pf)||0)-(parseFloat(s.adv)||0);return`<tr><td>${i+1}</td><td>${s.name}</td><td>${s.empId||'—'}</td><td>${s.month||'—'}</td><td>₹${s.basic||0}</td><td>₹${s.ot||0}</td><td>₹${s.allow||0}</td><td>₹${s.pf||0}</td><td>₹${s.adv||0}</td><td>₹${net.toLocaleString('en-IN')}</td><td>${s.status}</td></tr>`;}).join('')+'</table>';
   } else if(type==='contracts'){
-    content=`<h2>Contracts</h2><table><tr><th>#</th><th>Company</th><th>Start</th><th>End</th><th>Guards</th><th>Location</th><th>HR</th><th>Contact</th><th>Amount/mo</th><th>Status</th></tr>`+contracts.map((c,i)=>`<tr><td>${i+1}</td><td>${c.company}</td><td>${c.start||'—'}</td><td>${c.end||'—'}</td><td>${c.guards||'—'}</td><td>${c.location||'—'}</td><td>${c.hr||'—'}</td><td>${c.contact||'—'}</td><td>₹${c.amount?Number(c.amount).toLocaleString('en-IN'):'—'}</td><td>${c.status}</td></tr>`).join('')+'</table>';
+    content=`<h2>Contracts</h2><table><tr><th>#</th><th>Company</th><th>Start</th><th>End</th><th>Guards</th><th>Location</th><th>HR</th><th>Contact</th><th>Amount/mo</th><th>Status</th></tr>`+contracts.map((c,i)=>`<tr><td>${i+1}</td><td>${c.company}</td><td>${fmtDate(c.start)}</td><td>${fmtDate(c.end)}</td><td>${c.guards||'—'}</td><td>${c.location||'—'}</td><td>${c.hr||'—'}</td><td>${c.contact||'—'}</td><td>₹${c.amount?Number(c.amount).toLocaleString('en-IN'):'—'}</td><td>${c.status}</td></tr>`).join('')+'</table>';
   } else if(type==='bills'){
-    content=`<h2>Sales Bills</h2><table><tr><th>#</th><th>Company</th><th>Invoice</th><th>Date</th><th>Amount</th><th>Status</th></tr>`+salesBills.map((b,i)=>`<tr><td>${i+1}</td><td>${b.company}</td><td>${b.invoice}</td><td>${b.date||'—'}</td><td>₹${Number(b.amount).toLocaleString('en-IN')}</td><td>${b.status}</td></tr>`).join('')+'</table>';
+    content=`<h2>Sales Bills</h2><table><tr><th>#</th><th>Company</th><th>Invoice</th><th>Date</th><th>Amount</th><th>Status</th></tr>`+salesBills.map((b,i)=>`<tr><td>${i+1}</td><td>${b.company}</td><td>${b.invoice}</td><td>${fmtDate(b.date)}</td><td>₹${Number(b.amount).toLocaleString('en-IN')}</td><td>${b.status}</td></tr>`).join('')+'</table>';
     content+=`<br><h2>Purchase Bills</h2><table><tr><th>#</th><th>Item</th><th>Purchaser</th><th>Bill No.</th><th>Amount</th><th>Paid</th></tr>`+purchaseBills.map((b,i)=>`<tr><td>${i+1}</td><td>${b.item}</td><td>${b.purchaser}</td><td>${b.billno}</td><td>₹${Number(b.amount).toLocaleString('en-IN')}</td><td>${b.paid==='yes'?'Yes':'No'}</td></tr>`).join('')+'</table>';
   } else if(type==='attendance'){
-    content=`<h2>Attendance Report — ${new Date().toLocaleDateString('en-IN')}</h2><table><tr><th>#</th><th>Name</th><th>Site</th><th>Date</th><th>Check-In</th><th>Check-Out</th><th>QR</th></tr>`+attendanceLogs.slice().reverse().map((l,i)=>`<tr><td>${i+1}</td><td>${l.name}</td><td>${l.site}</td><td>${l.date}</td><td>${l.checkIn}</td><td>${l.checkOut||'—'}</td><td>${l.qrVerified?'✓':''}</td></tr>`).join('')+'</table>';
+    content=`<h2>Attendance Report — ${new Date().toLocaleDateString('en-IN')}</h2><table><tr><th>#</th><th>Name</th><th>Site</th><th>Date</th><th>Check-In</th><th>Check-Out</th><th>QR</th></tr>`+attendanceLogs.slice().reverse().map((l,i)=>`<tr><td>${i+1}</td><td>${l.name}</td><td>${l.site}</td><td>${fmtDate(l.date)}</td><td>${l.checkIn}</td><td>${l.checkOut||'—'}</td><td>${l.qrVerified?'✓':''}</td></tr>`).join('')+'</table>';
   }
   w.document.write(header+content+footer);
   w.document.close();w.print();
@@ -3788,9 +3788,9 @@ function checkAndTriggerAlerts(){
   contracts.forEach(c=>{
     if(c.end&&c.status!=='expired'){
       const days=Math.ceil((new Date(c.end)-new Date())/(1000*60*60*24));
-      if(days<=7&&days>=0)autoAlerts.push({type:'urgent',msg:c.company+' contract expires in '+days+' day'+(days===1?'':'s')+'!',sub:'End Date: '+c.end+' · Guards: '+(c.guards||'—')+' · Amount: ₹'+(c.amount?Number(c.amount).toLocaleString('en-IN'):'—')+'/mo. Take immediate action!'});
-      else if(days<=60&&days>=0)autoAlerts.push({type:'warning',msg:c.company+' contract expiring in '+days+' days',sub:'End Date: '+c.end+' · Please renew the contract before it expires.'});
-      else if(days<0)autoAlerts.push({type:'urgent',msg:c.company+' contract has EXPIRED!',sub:'End Date was: '+c.end+' · Please renew immediately!'});
+      if(days<=7&&days>=0)autoAlerts.push({type:'urgent',msg:c.company+' contract expires in '+days+' day'+(days===1?'':'s')+'!',sub:'End Date: '+fmtDate(c.end)+' · Guards: '+(c.guards||'—')+' · Amount: ₹'+(c.amount?Number(c.amount).toLocaleString('en-IN'):'—')+'/mo. Take immediate action!'});
+      else if(days<=60&&days>=0)autoAlerts.push({type:'warning',msg:c.company+' contract expiring in '+days+' days',sub:'End Date: '+fmtDate(c.end)+' · Please renew the contract before it expires.'});
+      else if(days<0)autoAlerts.push({type:'urgent',msg:c.company+' contract has EXPIRED!',sub:'End Date was: '+fmtDate(c.end)+' · Please renew immediately!'});
     }
   });
   autoAlerts.forEach(a=>{
@@ -4417,6 +4417,11 @@ function updateClock(){
 }
 
 // ═══ TOAST ═══
+function fmtDate(d){
+  if(!d)return '—';
+  const m=String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m?m[3]+'-'+m[2]+'-'+m[1]:d;
+}
 function showToast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg;t.classList.add('show');
