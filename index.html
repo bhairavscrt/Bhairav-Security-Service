@@ -759,7 +759,12 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
       <span class="card-title">📞 Follow-up Reminders</span>
       <button class="btn btn-primary btn-sm" onclick="document.getElementById('lead-modal').classList.remove('hidden');document.getElementById('lead-modal').dataset.editIdx='';">+ Add Follow-up</button>
     </div>
-    <div id="leads-list"><div style="color:var(--text3);font-size:12px;padding:8px;">No follow-ups yet. Add a company you met for future contract.</div></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Company</th><th>Contact Person</th><th>Phone</th><th>Notes</th><th>Follow-up Date</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="leads-list"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3);">No follow-ups yet. Add a company you met for future contract.</td></tr></tbody>
+      </table>
+    </div>
   </div>
 
   <div class="card">
@@ -2802,30 +2807,31 @@ function showAddSalForm(){
 // ═══ CONTRACTS ═══
 function renderLeads(){
   const el=document.getElementById('leads-list');if(!el)return;
-  if(followUpLeads.length===0){el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px;">No follow-ups yet. Add a company you met for future contract.</div>';return;}
+  if(followUpLeads.length===0){el.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3);">No follow-ups yet. Add a company you met for future contract.</td></tr>';return;}
   const today=new Date();today.setHours(0,0,0,0);
   const sorted=[...followUpLeads].sort((a,b)=>new Date(a.date)-new Date(b.date));
   el.innerHTML=sorted.map((l)=>{
     const i=followUpLeads.indexOf(l);
     const fDate=new Date(l.date);
     const days=Math.ceil((fDate-today)/(1000*60*60*24));
-    let badge,bg;
-    if(days<0){badge='⏰ Overdue';bg='#FEE2E2';}
-    else if(days===0){badge='📅 Today!';bg='#FFF3E0';}
-    else if(days<=7){badge='🔔 in '+days+'d';bg='#FFF3E0';}
-    else{badge=l.date;bg='#F0FDF4';}
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
-      <div>
-        <div style="font-weight:700;font-size:13px;">${l.company}</div>
-        <div style="font-size:11px;color:var(--text3);">${l.contact||''}${l.phone?' · '+l.phone:''}</div>
-        ${l.notes?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">📝 ${l.notes}</div>`:''}
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <span style="background:${bg};font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;white-space:nowrap;">${badge}</span>
+    let badge;
+    if(days<0)badge='<span class="badge b-red">⏰ Overdue</span>';
+    else if(days===0)badge='<span class="badge b-amber">📅 Today!</span>';
+    else if(days<=7)badge='<span class="badge b-amber">🔔 in '+days+'d</span>';
+    else badge='<span class="badge b-green">Upcoming</span>';
+    return `<tr>
+      <td style="color:var(--text3);">${i+1}</td>
+      <td style="font-weight:600;">${l.company}</td>
+      <td>${l.contact||'—'}</td>
+      <td>${l.phone||'—'}</td>
+      <td>${l.notes||'—'}</td>
+      <td>${l.date}</td>
+      <td>${badge}</td>
+      <td><div style="display:flex;gap:4px;">
         <button class="edit-btn" onclick="editLead(${i})">Edit</button>
         <button class="del-btn" onclick="deleteLead(${i})">🗑</button>
-      </div>
-    </div>`;
+      </div></td>
+    </tr>`;
   }).join('');
 }
 
