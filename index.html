@@ -1396,15 +1396,50 @@ const ROLES={
 // ═══ PERSISTENCE ═══
 const DB_KEY='bhairav_db';
 const DEFAULT_USERS=[{name:'Owner',username:'owner',password:'bhairav@owner',role:'owner',time:'any',av:'BS',bg:'#FF6B00'}];
+// ⭐ ADD ANY NEW DATA VARIABLE NAME HERE — it will auto save, sync to Firebase/Drive, and restore on all devices.
+const DB_FIELDS=['employees','users','contracts','salaries','salesBills','purchaseBills','alertsList','ownerContact','attendanceLogs','uniformStock','uniformIssues','savedReports','followUpLeads'];
+function collectDBData(){
+  const o={};
+  DB_FIELDS.forEach(k=>o[k]=window[k]);
+  return o;
+}
+function applyDBData(data){
+  if(!data)return;
+  DB_FIELDS.forEach(k=>{
+    if(data[k]!==undefined){
+      if(k==='ownerContact')window[k]=Object.assign({},window[k],data[k]);
+      else window[k]=data[k];
+    }
+  });
+}
 
 function saveDB(){
   try{
-    localStorage.setItem(DB_KEY,JSON.stringify({
-      employees,users,contracts,salaries,salesBills,purchaseBills,alertsList,ownerContact,attendanceLogs,uniformStock,uniformIssues,savedReports,followUpLeads
-    }));
+    localStorage.setItem(DB_KEY,JSON.stringify(collectDBData()));
   }catch(e){console.warn('DB save failed',e);}
   // Auto-push to Drive on every change (debounced, silent)
   scheduleDrivePush();
+  // Auto-push to Firebase on every change (debounced, silent)
+  scheduleFirebasePush();
+}
+
+// Debounced Firebase push — batches rapid saves into one sync
+let _fbPushTimer = null;
+function scheduleFirebasePush(){
+  if(_fbPushTimer) clearTimeout(_fbPushTimer);
+  _fbPushTimer = setTimeout(()=>{
+    _fbPushTimer = null;
+    if(!fbRef||!fbReady) return; // not connected yet, will sync on next change
+    fbIsPushing = true;
+    const data = fbGetAllData();
+    fbRef.set(data)
+      .then(()=>{
+        fbIsPushing = false;
+        localStorage.setItem('fb_last_sync', new Date().toISOString());
+        if(typeof fbUpdateLastSync==='function') fbUpdateLastSync();
+      })
+      .catch(e=>{ fbIsPushing = false; console.warn('Auto FB push error:', e); });
+  }, 1500); // 1.5-second debounce
 }
 
 // Debounced Drive push — batches rapid saves into one upload
@@ -4072,9 +4107,13 @@ async function autoSyncOnLogin(){
     if(data.alertsList) alertsList=data.alertsList;
     if(data.attendanceLogs) attendanceLogs=data.attendanceLogs;
     if(data.ownerContact) ownerContact=Object.assign(ownerContact,data.ownerContact);
+    if(data.uniformStock) uniformStock=data.uniformStock;
+    if(data.uniformIssues) uniformIssues=data.uniformIssues;
+    if(data.savedReports) savedReports=data.savedReports;
+    if(data.followUpLeads) followUpLeads=data.followUpLeads;
     if(!users.find(u=>u.username==='owner')) users.unshift(DEFAULT_USERS[0]);
     // Save locally and re-render
-    localStorage.setItem(DB_KEY, JSON.stringify({employees,users,contracts,salaries,salesBills,purchaseBills,alertsList,ownerContact,attendanceLogs}));
+    localStorage.setItem(DB_KEY, JSON.stringify(collectDBData()));
     localStorage.setItem('gdrive_last_sync', new Date().toISOString());
     updateDashboard();
     renderUsers();
@@ -4896,29 +4935,19 @@ function fbUpdateLastSync(){
 
 // Get all current data as one object
 function fbGetAllData(){
-  return {
-    employees, users, contracts, salaries,
-    salesBills, purchaseBills, alertsList,
-    attendanceLogs, ownerContact,
-    _meta:{
-      savedAt: new Date().toISOString(),
-      by: (currentUser&&currentUser.username)||'system',
-      deviceId: FB_DEVICE_ID
-    }
+  const o=collectDBData();
+  o._meta={
+    savedAt: new Date().toISOString(),
+    by: (currentUser&&currentUser.username)||'system',
+    deviceId: FB_DEVICE_ID
   };
+  return o;
 }
 
 // Apply Firebase data to all local variables and refresh UI
 function fbApplyData(data){
   if(!data) return;
-  if(data.employees)     employees     = data.employees;
-  if(data.contracts)     contracts     = data.contracts;
-  if(data.salaries)      salaries      = data.salaries;
-  if(data.salesBills)    salesBills    = data.salesBills;
-  if(data.purchaseBills) purchaseBills = data.purchaseBills;
-  if(data.alertsList)    alertsList    = data.alertsList;
-  if(data.attendanceLogs)attendanceLogs= data.attendanceLogs;
-  if(data.ownerContact)  ownerContact  = Object.assign({}, ownerContact, data.ownerContact);
+  applyDBData(data);
   // Merge users — always keep owner from DEFAULT_USERS
   if(data.users && data.users.length){
     const others = data.users.filter(u=>u.username!=='owner');
@@ -4926,7 +4955,7 @@ function fbApplyData(data){
   }
   // Save to localStorage
   const now = new Date().toISOString();
-  localStorage.setItem(DB_KEY, JSON.stringify({employees,users,contracts,salaries,salesBills,purchaseBills,alertsList,ownerContact,attendanceLogs}));
+  localStorage.setItem(DB_KEY, JSON.stringify(collectDBData()));
   localStorage.setItem('fb_last_sync', now);
   fbUpdateLastSync();
   // Refresh UI if logged in
@@ -4938,6 +4967,9 @@ function fbApplyData(data){
     try{ renderSalList(); }catch(e){}
     try{ renderContracts(); }catch(e){}
     try{ renderBills(); }catch(e){}
+    try{ renderUniformStock(); }catch(e){}
+    try{ renderSavedReports(); }catch(e){}
+    try{ renderLeads(); }catch(e){}
     try{ renderAlerts(); }catch(e){}
   }
 }
