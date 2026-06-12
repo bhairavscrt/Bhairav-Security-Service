@@ -1429,21 +1429,26 @@ function saveDB(){
 
 // Debounced Firebase push — batches rapid saves into one sync
 let _fbPushTimer = null;
+let _fbPushPending = false;
 function scheduleFirebasePush(){
   if(_fbPushTimer) clearTimeout(_fbPushTimer);
   _fbPushTimer = setTimeout(()=>{
     _fbPushTimer = null;
-    if(!fbRef||!fbReady) return; // not connected yet, will sync on next change
-    fbIsPushing = true;
-    const data = fbGetAllData();
-    fbRef.set(data)
-      .then(()=>{
-        fbIsPushing = false;
-        localStorage.setItem('fb_last_sync', new Date().toISOString());
-        if(typeof fbUpdateLastSync==='function') fbUpdateLastSync();
-      })
-      .catch(e=>{ fbIsPushing = false; console.warn('Auto FB push error:', e); });
+    doFirebasePush();
   }, 1500); // 1.5-second debounce
+}
+function doFirebasePush(){
+  if(!fbRef||!fbReady){ _fbPushPending=true; return; } // retry once ready
+  _fbPushPending=false;
+  fbIsPushing = true;
+  const data = fbGetAllData();
+  fbRef.set(data)
+    .then(()=>{
+      fbIsPushing = false;
+      localStorage.setItem('fb_last_sync', new Date().toISOString());
+      if(typeof fbUpdateLastSync==='function') fbUpdateLastSync();
+    })
+    .catch(e=>{ fbIsPushing = false; _fbPushPending=true; console.warn('Auto FB push error:', e); });
 }
 
 // Debounced Drive push — batches rapid saves into one upload
@@ -5076,6 +5081,9 @@ window.saveDB = saveDB;      // keep window.saveDB in sync
             if(fbIsPushing && data._meta && data._meta.deviceId===FB_DEVICE_ID) return;
             fbApplyData(data);
           });
+
+          // If a save happened before Firebase was ready, push it now
+          if(_fbPushPending) doFirebasePush();
 
         }).catch(e=>console.warn('Firebase initial load error:',e));
 
