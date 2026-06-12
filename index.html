@@ -1396,21 +1396,25 @@ const ROLES={
 // ═══ PERSISTENCE ═══
 const DB_KEY='bhairav_db';
 const DEFAULT_USERS=[{name:'Owner',username:'owner',password:'bhairav@owner',role:'owner',time:'any',av:'BS',bg:'#FF6B00'}];
-// ⭐ ADD ANY NEW DATA VARIABLE NAME HERE — it will auto save, sync to Firebase/Drive, and restore on all devices.
 const DB_FIELDS=['employees','users','contracts','salaries','salesBills','purchaseBills','alertsList','ownerContact','attendanceLogs','uniformStock','uniformIssues','savedReports','followUpLeads'];
 function collectDBData(){
-  const o={};
-  DB_FIELDS.forEach(k=>o[k]=window[k]);
-  return o;
+  return {employees,users,contracts,salaries,salesBills,purchaseBills,alertsList,ownerContact,attendanceLogs,uniformStock,uniformIssues,savedReports,followUpLeads};
 }
 function applyDBData(data){
   if(!data)return;
-  DB_FIELDS.forEach(k=>{
-    if(data[k]!==undefined){
-      if(k==='ownerContact')window[k]=Object.assign({},window[k],data[k]);
-      else window[k]=data[k];
-    }
-  });
+  if(data.employees!==undefined)employees=data.employees;
+  if(data.users!==undefined)users=data.users;
+  if(data.contracts!==undefined)contracts=data.contracts;
+  if(data.salaries!==undefined)salaries=data.salaries;
+  if(data.salesBills!==undefined)salesBills=data.salesBills;
+  if(data.purchaseBills!==undefined)purchaseBills=data.purchaseBills;
+  if(data.alertsList!==undefined)alertsList=data.alertsList;
+  if(data.attendanceLogs!==undefined)attendanceLogs=data.attendanceLogs;
+  if(data.uniformStock!==undefined)uniformStock=data.uniformStock;
+  if(data.uniformIssues!==undefined)uniformIssues=data.uniformIssues;
+  if(data.savedReports!==undefined)savedReports=data.savedReports;
+  if(data.followUpLeads!==undefined)followUpLeads=data.followUpLeads;
+  if(data.ownerContact!==undefined)ownerContact=Object.assign({},ownerContact,data.ownerContact);
 }
 
 function saveDB(){
