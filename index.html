@@ -1530,22 +1530,16 @@ function loadDB(){
     if(db.uniformIssues)uniformIssues=db.uniformIssues;
     if(db.savedReports)savedReports=db.savedReports;
     if(db.followUpLeads)followUpLeads=db.followUpLeads;
-    // Ensure owner always exists
     if(!users.find(u=>u.username==='owner'))users.unshift(DEFAULT_USERS[0]);
   }catch(e){console.warn('DB load failed',e);}
 }
 
+// ── State variables (MUST be declared before loadDB is called) ──
 let employees=[];
 let users=[...DEFAULT_USERS];
 let contracts=[];
 let salaries=[];
 let salesBills=[];
-const UNIFORM_SIZES=['30','32','34','36','38','40','42'];
-const UNIFORM_ITEMS=['Uniform','Shirt','Pant','Shoes','Cap'];
-let uniformStock={};// {item_size: qty}
-let uniformIssues=[];// [{empId,empName,date,items:[{item,size,pairs}]}]
-let savedReports=[];
-let followUpLeads=[];
 let purchaseBills=[];
 let alertsList=[];
 let attendanceLogs=[];
@@ -1554,6 +1548,12 @@ let currentBillTab='sales';
 let selectedRole='owner';
 let ownerContact={mobile:'',email:'',callmebotKey:'',emailjsService:'',emailjsTemplate:'',emailjsPubKey:''};
 let ciOn=false;
+const UNIFORM_SIZES=['30','32','34','36','38','40','42'];
+const UNIFORM_ITEMS=['Uniform','Shirt','Pant','Shoes','Cap'];
+let uniformStock={};
+let uniformIssues=[];
+let savedReports=[];
+let followUpLeads=[];
 
 // Load saved data immediately on page load
 loadDB();
@@ -5068,17 +5068,30 @@ window.saveDB = saveDB;      // keep window.saveDB in sync
         fbSetStatus('✅ Securely connected — all changes sync instantly across all devices.','ok');
         fbSetLive(true);
 
-        // Step 1: Load initial data from Firebase (before login so guards can login)
+        // Step 1: Load initial data from Firebase only if newer than local
         fbRef.once('value').then(snap=>{
           const data = snap.val();
-          if(data) fbApplyData(data);
+          if(data && data._meta){
+            const fbTime=new Date(data._meta.savedAt||0).getTime();
+            const localTime=new Date(localStorage.getItem('fb_last_sync')||0).getTime();
+            // Only apply Firebase data if it's newer than what we last synced
+            if(fbTime>localTime){
+              fbApplyData(data);
+              localStorage.setItem('fb_last_sync', data._meta.savedAt);
+            } else if(employees.length>0){
+              // Local is newer — push local to Firebase
+              doFirebasePush();
+            }
+          } else if(data){
+            fbApplyData(data);
+          }
 
-          // Step 2: Start live listener
+          // Step 2: Live listener — only apply changes from OTHER devices
           fbRef.on('value', snap=>{
             const data = snap.val();
             if(!data) return;
-            // Skip if this device just pushed (avoid echo loop)
-            if(fbIsPushing && data._meta && data._meta.deviceId===FB_DEVICE_ID) return;
+            // Skip echo from this device's own push
+            if(data._meta && data._meta.deviceId===FB_DEVICE_ID) return;
             fbApplyData(data);
           });
 
