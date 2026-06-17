@@ -1750,7 +1750,7 @@ function renderEmpTable(){
       <td><span style="font-weight:600;">${e.name}</span></td>
       <td>${e.site||'—'}</td>
       <td><span class="badge b-blue" style="font-size:9px;">${e.cat}</span></td>
-      <td><span class="badge ${e.status==='Current'?'b-green':'b-gray'}">${e.status}</span></td>
+      <td><span class="badge ${e.status==='Current'?'b-green':'b-gray'}">${e.status}</span>${(e.advances||[]).some(a=>!a.recovered)?`<span class="badge b-red" style="margin-left:4px;font-size:9px;">💵 Adv</span>`:''}</td>
       <td style="white-space:nowrap;font-size:11px;">${fmtDate(e.doj)}</td>
       <td>${e.pdfName?`<span style="font-size:10px;color:var(--blue);">📄 ${e.pdfName}</span>`:'<span style="font-size:10px;color:var(--text3);">No file</span>'}</td>
       <td>
@@ -2160,6 +2160,24 @@ function generateEmpPDF(id){
   w.document.close();w.print();
 }
 
+function addAdvance(empId){
+  const amt=parseFloat(document.getElementById('adv-amt-'+empId).value)||0;
+  const note=document.getElementById('adv-note-'+empId).value.trim();
+  if(!amt){showToast('Enter advance amount!');return;}
+  const e=employees.find(x=>x.id===empId);if(!e)return;
+  if(!e.advances)e.advances=[];
+  e.advances.push({date:new Date().toISOString().split('T')[0],amount:amt,note,recovered:false});
+  saveDB();showProfile(empId);renderEmpTable();
+  showToast('✅ Advance of ₹'+amt.toLocaleString('en-IN')+' recorded!');
+}
+
+function toggleAdvanceRecovery(empId,idx){
+  const e=employees.find(x=>x.id===empId);if(!e||!e.advances)return;
+  e.advances[idx].recovered=!e.advances[idx].recovered;
+  saveDB();showProfile(empId);renderEmpTable();
+  showToast(e.advances[idx].recovered?'✅ Marked as recovered':'↩ Marked as pending');
+}
+
 function showProfile(id){
   const e=employees.find(x=>x.id===id);if(!e)return;
   document.getElementById('modal-title').textContent=e.name+' — Profile';
@@ -2212,6 +2230,28 @@ function showProfile(id){
         <div class="pf"><div class="pf-l">Bank Name</div><div class="pf-v">${e.bank||'—'}</div></div>
         <div class="pf"><div class="pf-l">Account No</div><div class="pf-v">${e.acc||'—'}</div></div>
         <div class="pf"><div class="pf-l">IFSC Code</div><div class="pf-v">${e.ifsc||'—'}</div></div>
+      </div>
+    </div>
+    <div class="profile-section">
+      <div class="profile-section-title">💵 Advance Salary</div>
+      <div id="adv-section-${e.id}">
+        ${(e.advances||[]).length===0?'<div style="font-size:12px;color:var(--text3);margin-bottom:8px;">No advance records.</div>':
+        `<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px;">
+          <thead><tr style="background:var(--saffron);color:#fff;"><th style="padding:5px 8px;text-align:left;">Date</th><th style="padding:5px 8px;text-align:left;">Note</th><th style="padding:5px 8px;text-align:center;">Amount</th><th style="padding:5px 8px;text-align:center;">Status</th><th></th></tr></thead>
+          <tbody>${(e.advances||[]).map((a,ai)=>`<tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:5px 8px;">${fmtDate(a.date)}</td>
+            <td style="padding:5px 8px;">${a.note||'—'}</td>
+            <td style="padding:5px 8px;text-align:center;font-weight:700;color:#DC2626;">₹${Number(a.amount).toLocaleString('en-IN')}</td>
+            <td style="padding:5px 8px;text-align:center;"><span style="background:${a.recovered?'#DCFCE7':'#FEE2E2'};color:${a.recovered?'#16A34A':'#DC2626'};padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">${a.recovered?'Recovered':'Pending'}</span></td>
+            <td style="padding:5px 8px;"><button class="btn btn-outline btn-xs" onclick="toggleAdvanceRecovery('${e.id}',${ai})">${a.recovered?'Undo':'✓ Recovered'}</button></td>
+          </tr>`).join('')}</tbody>
+        </table>
+        <div style="font-size:12px;font-weight:700;color:#DC2626;margin-bottom:8px;">Total Pending: ₹${(e.advances||[]).filter(a=>!a.recovered).reduce((s,a)=>s+(parseFloat(a.amount)||0),0).toLocaleString('en-IN')}</div>`}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <input id="adv-amt-${e.id}" type="number" placeholder="Amount ₹" style="width:100px;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;">
+          <input id="adv-note-${e.id}" placeholder="Note" style="flex:1;min-width:100px;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;">
+          <button class="btn btn-primary btn-sm" onclick="addAdvance('${e.id}')">+ Add Advance</button>
+        </div>
       </div>
     </div>
     <div class="profile-section">
