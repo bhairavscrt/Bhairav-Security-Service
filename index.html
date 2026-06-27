@@ -1632,7 +1632,7 @@ function doLogin(){
   // Auto-pull latest data from Drive on login if Drive is configured
   setTimeout(autoSyncOnLogin, 1000);
   // Check if monthly report needs to be generated (1st of month)
-  if(currentUser.role==='owner') setTimeout(checkAutoMonthlyReport, 2000);
+  if(currentUser.role==='owner') setTimeout(checkAdvanceReminder,4000);
 }
 
 // ═══ REGISTER ═══
@@ -2102,6 +2102,21 @@ function renderUniformHistory(){
 function deleteUniformIssue(i){
   if(!confirm('Delete this uniform issue record?'))return;
   uniformIssues.splice(i,1);saveDB();renderUniformHistory();showToast('Deleted.');
+}
+
+function checkAdvanceReminder(){
+  const day=new Date().getDate();
+  if(day<1||day>7)return; // only 1st to 7th
+  const pending=employees.filter(e=>(e.advances||[]).some(a=>!a.recovered));
+  if(pending.length===0)return;
+  document.getElementById('adv-reminder-list').innerHTML=pending.map(e=>{
+    const total=(e.advances||[]).filter(a=>!a.recovered).reduce((s,a)=>s+(parseFloat(a.amount)||0),0);
+    return`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="font-weight:600;">👷 ${e.name}</span>
+      <span style="font-weight:700;color:#DC2626;">₹${total.toLocaleString('en-IN')} pending</span>
+    </div>`;
+  }).join('');
+  document.getElementById('adv-reminder-modal').classList.remove('hidden');
 }
 
 function checkBirthdays(){
@@ -5190,6 +5205,20 @@ window.saveDB = saveDB;      // keep window.saveDB in sync
 </div>
 
 <!-- ═══ BIRTHDAY POPUP ═══ -->
+<div class="modal-overlay hidden" id="adv-reminder-modal" style="z-index:4000;">
+  <div class="modal-box" style="max-width:360px;border-radius:20px;overflow:hidden;padding:0;">
+    <div style="background:linear-gradient(135deg,#DC2626,#EF4444);padding:20px 16px 14px;text-align:center;">
+      <div style="font-size:40px;margin-bottom:6px;">💵</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:#fff;">Advance Salary Reminder</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.8);margin-top:4px;">Deduct before paying salary this month</div>
+    </div>
+    <div style="padding:16px;">
+      <div id="adv-reminder-list"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px;background:#DC2626;border-color:#DC2626;" onclick="document.getElementById('adv-reminder-modal').classList.add('hidden')">✅ I'll Remember</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="birthday-modal" style="z-index:4000;">
   <div class="modal-box" style="max-width:360px;text-align:center;padding:0;overflow:hidden;border-radius:20px;">
     <div style="background:linear-gradient(135deg,#FF6B00,#FF8C33);padding:24px 16px 16px;">
