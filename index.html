@@ -2699,7 +2699,7 @@ function generateMonthReport(prevMonth,prevYear){
       }
       return`<td style="background:#FEE2E2;color:#DC2626;text-align:center;font-weight:700;padding:3px;">A</td>`;
     }).join('');
-    const monthlySal=parseFloat(e.salary)||0;
+    const monthlySal=parseFloat(e.rawSalary)||parseFloat((e.salary||'').replace(/[₹,]/g,''))||0;
     const perDay=monthlySal/daysInMonth;
     const otRate=(monthlySal/(26*8));
     const earned=Math.round(perDay*present)+(ot>0?Math.round(otRate*ot):0);
