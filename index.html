@@ -2593,8 +2593,12 @@ function showAttOptions(empId,empName,dateStr,isPresent){
       <button onclick="setAttShift('${empId}','${empName}','${dateStr}','day')" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${curShift==='day'?'#16A34A':'#ddd'};background:${curShift==='day'?'#DCFCE7':'#fff'};font-weight:700;cursor:pointer;color:${curShift==='day'?'#16A34A':'#666'};">☀️ Day</button>
       <button onclick="setAttShift('${empId}','${empName}','${dateStr}','night')" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${curShift==='night'?'#6D28D9':'#ddd'};background:${curShift==='night'?'#EDE9FE':'#fff'};font-weight:700;cursor:pointer;color:${curShift==='night'?'#6D28D9':'#666'};">🌙 Night</button>
     </div>
-    <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text3);">OVERTIME HOURS</div>
-    <input type="number" id="ot-hrs-input" value="${curOT}" min="0" max="24" placeholder="0" style="width:100%;padding:9px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:14px;">
+    <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text3);">OVERTIME</div>
+    <select id="ot-hrs-input" style="width:100%;padding:9px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:14px;">
+      <option value="0" ${curOT==0?'selected':''}>No OT</option>
+      <option value="6" ${curOT==6?'selected':''}>6 Hours (Half Day) — ₹${Math.round(((parseFloat(employees.find(e=>e.id===empId)?.rawSalary)||parseFloat((employees.find(e=>e.id===empId)?.salary||'').replace(/[₹,]/g,''))||0)/30)/2)}</option>
+      <option value="12" ${curOT==12?'selected':''}>12 Hours (Full Day) — ₹${Math.round((parseFloat(employees.find(e=>e.id===empId)?.rawSalary)||parseFloat((employees.find(e=>e.id===empId)?.salary||'').replace(/[₹,]/g,''))||0)/30)}</option>
+    </select>
     <div style="display:flex;gap:8px;">
       <button onclick="saveAttOT('${empId}','${empName}','${dateStr}')" style="flex:1;padding:9px;background:#FF6B00;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">💾 Save</button>
       <button onclick="toggleAtt('${empId}','${empName}','${dateStr}',${isPresent})" style="flex:1;padding:9px;background:#FEE2E2;color:#DC2626;border:none;border-radius:8px;font-weight:700;cursor:pointer;">${isPresent?'❌ Absent':'✅ Present'}</button>
@@ -2731,8 +2735,8 @@ function _generateMonthReport(prevMonth,prevYear){
     }).join('');
     const monthlySal=parseFloat(e.rawSalary)||parseFloat((e.salary||'').replace(/[₹,]/g,''))||0;
     const perDay=daysInMonth>0?monthlySal/daysInMonth:0;
-    const otRate=monthlySal>0?monthlySal/(26*8):0;
-    const earned=Math.round(perDay*present)+(ot>0?Math.round(otRate*ot):0);
+    const otPay=ot>0?Math.round((ot/12)*perDay):0;
+    const earned=Math.round(perDay*present)+otPay;
     return`<tr><td style="padding:5px 8px;font-weight:600;">${e.name}<div style="font-size:9px;color:#666;">${e.site||'—'}</div></td>${cells}<td style="text-align:center;font-weight:700;color:#16A34A;padding:3px;">${present}</td><td style="text-align:center;font-weight:700;color:#DC2626;padding:3px;">${daysInMonth-present}</td><td style="text-align:center;font-size:10px;color:#7C3AED;padding:3px;">${ot>0?ot+'h':'—'}</td><td style="text-align:center;font-weight:700;color:#1D4ED8;padding:5px;">₹${earned.toLocaleString('en-IN')}</td></tr>`;
   }).join('');
   const html=`<div style="font-size:10px;margin-bottom:6px;">P=Day &nbsp; <span style="color:#6D28D9;">N=Night</span> &nbsp; A=Absent</div><table style="border-collapse:collapse;font-size:11px;width:100%;"><thead><tr style="background:#FF6B00;color:#fff;"><th style="padding:6px 8px;text-align:left;">Employee</th>${days.map(d=>`<th style="padding:4px;text-align:center;">${d}</th>`).join('')}<th>P</th><th>A</th><th>OT</th><th style="padding:6px;">Salary</th></tr></thead><tbody>${tableRows}</tbody></table>`;
