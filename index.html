@@ -2596,8 +2596,8 @@ function showAttOptions(empId,empName,dateStr,isPresent){
     <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text3);">OVERTIME</div>
     <select id="ot-hrs-input" style="width:100%;padding:9px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:14px;">
       <option value="0" ${curOT==0?'selected':''}>No OT</option>
-      <option value="6" ${curOT==6?'selected':''}>6 Hours (Half Day) — ₹${Math.round(((parseFloat(employees.find(e=>e.id===empId)?.rawSalary)||parseFloat((employees.find(e=>e.id===empId)?.salary||'').replace(/[₹,]/g,''))||0)/30)/2)}</option>
-      <option value="12" ${curOT==12?'selected':''}>12 Hours (Full Day) — ₹${Math.round((parseFloat(employees.find(e=>e.id===empId)?.rawSalary)||parseFloat((employees.find(e=>e.id===empId)?.salary||'').replace(/[₹,]/g,''))||0)/30)}</option>
+      <option value="6" ${curOT==6?'selected':''}>6 Hours (Half Day) — ₹${(()=>{const sal=parseFloat(employees.find(e=>e.id===empId)?.rawSalary)||parseFloat((employees.find(e=>e.id===empId)?.salary||'').replace(/[₹,]/g,''))||0;const now=new Date();const dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();return Math.round((sal/dim)/2);})()}</option>
+      <option value="12" ${curOT==12?'selected':''}>12 Hours (Full Day) — ₹${(()=>{const sal=parseFloat(employees.find(e=>e.id===empId)?.rawSalary)||parseFloat((employees.find(e=>e.id===empId)?.salary||'').replace(/[₹,]/g,''))||0;const now=new Date();const dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();return Math.round(sal/dim);})()}</option>
     </select>
     <div style="display:flex;gap:8px;">
       <button onclick="saveAttOT('${empId}','${empName}','${dateStr}')" style="flex:1;padding:9px;background:#FF6B00;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">💾 Save</button>
