@@ -2579,6 +2579,60 @@ function submitCheckout(){
 }
 
 // ── Render Log ──
+function showAttOptions(empId,empName,dateStr,isPresent){
+  const existing=attendanceLogs.find(l=>(l.username===empId||l.name===empName)&&l.date===dateStr);
+  const curShift=existing?.shift||'day';
+  const curOT=existing?.overtime||'';
+  const d=document.createElement('div');
+  d.id='att-opts-wrap';
+  d.innerHTML=`<div style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9998;" onclick="document.getElementById('att-opts-wrap').remove()"></div>
+  <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:20px;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.25);min-width:270px;max-width:90vw;">
+    <div style="font-weight:700;font-size:15px;margin-bottom:12px;">📅 ${fmtDate(dateStr)} · ${empName}</div>
+    <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text3);">SHIFT</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button onclick="setAttShift('${empId}','${empName}','${dateStr}','day')" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${curShift==='day'?'#16A34A':'#ddd'};background:${curShift==='day'?'#DCFCE7':'#fff'};font-weight:700;cursor:pointer;color:${curShift==='day'?'#16A34A':'#666'};">☀️ Day</button>
+      <button onclick="setAttShift('${empId}','${empName}','${dateStr}','night')" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${curShift==='night'?'#6D28D9':'#ddd'};background:${curShift==='night'?'#EDE9FE':'#fff'};font-weight:700;cursor:pointer;color:${curShift==='night'?'#6D28D9':'#666'};">🌙 Night</button>
+    </div>
+    <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text3);">OVERTIME HOURS</div>
+    <input type="number" id="ot-hrs-input" value="${curOT}" min="0" max="24" placeholder="0" style="width:100%;padding:9px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:14px;">
+    <div style="display:flex;gap:8px;">
+      <button onclick="saveAttOT('${empId}','${empName}','${dateStr}')" style="flex:1;padding:9px;background:#FF6B00;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">💾 Save</button>
+      <button onclick="toggleAtt('${empId}','${empName}','${dateStr}',${isPresent})" style="flex:1;padding:9px;background:#FEE2E2;color:#DC2626;border:none;border-radius:8px;font-weight:700;cursor:pointer;">${isPresent?'❌ Absent':'✅ Present'}</button>
+      <button onclick="document.getElementById('att-opts-wrap').remove()" style="padding:9px 12px;background:#f3f4f6;border:none;border-radius:8px;cursor:pointer;">✕</button>
+    </div>
+  </div>`;
+  document.body.appendChild(d);
+}
+
+function setAttShift(empId,empName,dateStr,shift){
+  let log=attendanceLogs.find(l=>(l.username===empId||l.name===empName)&&l.date===dateStr);
+  if(!log){
+    const emp=employees.find(e=>e.id===empId);
+    attendanceLogs.push({username:empId,name:empName,site:emp?.site||'—',date:dateStr,time:'00:00',type:'check-in',method:'manual',shift});
+  } else {
+    log.shift=shift;
+  }
+  saveDB();
+  document.getElementById('att-opts-wrap')?.remove();
+  renderAttLog();
+  showToast(shift==='day'?'☀️ Day shift set':'🌙 Night shift set');
+}
+
+function saveAttOT(empId,empName,dateStr){
+  const ot=parseFloat(document.getElementById('ot-hrs-input')?.value)||0;
+  let log=attendanceLogs.find(l=>(l.username===empId||l.name===empName)&&l.date===dateStr);
+  if(!log){
+    const emp=employees.find(e=>e.id===empId);
+    attendanceLogs.push({username:empId,name:empName,site:emp?.site||'—',date:dateStr,time:'00:00',type:'check-in',method:'manual',shift:'day',overtime:ot});
+  } else {
+    log.overtime=ot;
+  }
+  saveDB();
+  document.getElementById('att-opts-wrap')?.remove();
+  renderAttLog();
+  showToast('✅ OT saved: '+ot+' hours');
+}
+
 function toggleAtt(empId,empName,dateStr,isPresent){
   if(isPresent){
     const idx=attendanceLogs.findIndex(l=>(l.username===empId||l.name===empName)&&l.date===dateStr);
@@ -2790,8 +2844,14 @@ function renderAttLog(){
             const future=new Date(dateStr)>now;
             if(future)return`<td style="padding:3px;text-align:center;background:#f9f9f9;color:#ccc;">·</td>`;
             const logIdx=attendanceLogs.findIndex(l=>(l.username===e.id||l.name===e.name)&&l.date===dateStr);
-            if(logIdx>=0){present++;return`<td onclick="toggleAtt('${e.id}','${e.name}','${dateStr}',true)" style="padding:3px;text-align:center;background:#DCFCE7;color:#16A34A;font-weight:700;cursor:pointer;" title="Click to mark Absent">P</td>`;}
-            return`<td onclick="toggleAtt('${e.id}','${e.name}','${dateStr}',false)" style="padding:3px;text-align:center;background:#FEE2E2;color:#DC2626;font-weight:700;cursor:pointer;" title="Click to mark Present">A</td>`;
+            if(logIdx>=0){
+              present++;
+              const log=attendanceLogs[logIdx];
+              const isNight=log.shift==='night';
+              const hasOT=log.overtime>0;
+              return`<td onclick="showAttOptions('${e.id}','${e.name}','${dateStr}',true)" style="padding:3px;text-align:center;background:${isNight?'#EDE9FE':'#DCFCE7'};color:${isNight?'#6D28D9':'#16A34A'};font-weight:700;cursor:pointer;font-size:10px;" title="${isNight?'Night':'Day'} shift${hasOT?' | OT:'+log.overtime+'h':''} — Click to edit">${isNight?'N':'P'}${hasOT?'⭐':''}</td>`;
+            }
+            return`<td onclick="showAttOptions('${e.id}','${e.name}','${dateStr}',false)" style="padding:3px;text-align:center;background:#FEE2E2;color:#DC2626;font-weight:700;cursor:pointer;" title="Click to mark Present or set shift">A</td>`;
           }).join('');
           const pastDays=days.filter(d=>new Date(curYear+'-'+String(curMonth).padStart(2,'0')+'-'+String(d).padStart(2,'0'))<=now).length;
           const absent=pastDays-present;
