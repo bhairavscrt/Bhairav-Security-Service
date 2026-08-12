@@ -626,7 +626,7 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
 
     <!-- Monthly Saved Reports -->
     <div class="card" style="margin-top:10px;">
-      <div class="card-head"><span class="card-title">📁 Monthly Reports</span><button class="btn btn-outline btn-sm" onclick="regenerateAllReports()">🔄 Regenerate</button></div>
+      <div class="card-head"><span class="card-title">📁 Monthly Reports</span></div>
       <div id="att-saved-reports-list"><div style="color:var(--text3);font-size:12px;padding:8px;">Reports auto-save on 1st of every month.</div></div>
     </div>
 
@@ -2579,64 +2579,6 @@ function submitCheckout(){
 }
 
 // ── Render Log ──
-function showAttOptions(empId,empName,dateStr,isPresent){
-  const existing=attendanceLogs.find(l=>(l.username===empId||l.name===empName)&&l.date===dateStr);
-  const curShift=existing?.shift||'day';
-  const curOT=existing?.overtime||'';
-  const d=document.createElement('div');
-  d.id='att-opts-wrap';
-  d.innerHTML=`<div style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9998;" onclick="document.getElementById('att-opts-wrap').remove()"></div>
-  <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:20px;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.25);min-width:270px;max-width:90vw;">
-    <div style="font-weight:700;font-size:15px;margin-bottom:12px;">📅 ${fmtDate(dateStr)} · ${empName}</div>
-    <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text3);">SHIFT</div>
-    <div style="display:flex;gap:8px;margin-bottom:14px;">
-      <button onclick="setAttShift('${empId}','${empName}','${dateStr}','day')" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${curShift==='day'?'#16A34A':'#ddd'};background:${curShift==='day'?'#DCFCE7':'#fff'};font-weight:700;cursor:pointer;color:${curShift==='day'?'#16A34A':'#666'};">☀️ Day</button>
-      <button onclick="setAttShift('${empId}','${empName}','${dateStr}','night')" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${curShift==='night'?'#6D28D9':'#ddd'};background:${curShift==='night'?'#EDE9FE':'#fff'};font-weight:700;cursor:pointer;color:${curShift==='night'?'#6D28D9':'#666'};">🌙 Night</button>
-    </div>
-    <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text3);">OVERTIME</div>
-    <select id="ot-hrs-input" style="width:100%;padding:9px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:14px;">
-      <option value="0" ${curOT==0?'selected':''}>No OT</option>
-      <option value="6" ${curOT==6?'selected':''}>6 Hours (Half Day) — ₹${(()=>{const sal=parseFloat(employees.find(e=>e.id===empId)?.rawSalary)||parseFloat((employees.find(e=>e.id===empId)?.salary||'').replace(/[₹,]/g,''))||0;const now=new Date();const dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();return Math.round((sal/dim)/2);})()}</option>
-      <option value="12" ${curOT==12?'selected':''}>12 Hours (Full Day) — ₹${(()=>{const sal=parseFloat(employees.find(e=>e.id===empId)?.rawSalary)||parseFloat((employees.find(e=>e.id===empId)?.salary||'').replace(/[₹,]/g,''))||0;const now=new Date();const dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();return Math.round(sal/dim);})()}</option>
-    </select>
-    <div style="display:flex;gap:8px;">
-      <button onclick="saveAttOT('${empId}','${empName}','${dateStr}')" style="flex:1;padding:9px;background:#FF6B00;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">💾 Save</button>
-      <button onclick="toggleAtt('${empId}','${empName}','${dateStr}',${isPresent})" style="flex:1;padding:9px;background:#FEE2E2;color:#DC2626;border:none;border-radius:8px;font-weight:700;cursor:pointer;">${isPresent?'❌ Absent':'✅ Present'}</button>
-      <button onclick="document.getElementById('att-opts-wrap').remove()" style="padding:9px 12px;background:#f3f4f6;border:none;border-radius:8px;cursor:pointer;">✕</button>
-    </div>
-  </div>`;
-  document.body.appendChild(d);
-}
-
-function setAttShift(empId,empName,dateStr,shift){
-  let log=attendanceLogs.find(l=>(l.username===empId||l.name===empName)&&l.date===dateStr);
-  if(!log){
-    const emp=employees.find(e=>e.id===empId);
-    attendanceLogs.push({username:empId,name:empName,site:emp?.site||'—',date:dateStr,time:'00:00',type:'check-in',method:'manual',shift});
-  } else {
-    log.shift=shift;
-  }
-  saveDB();
-  document.getElementById('att-opts-wrap')?.remove();
-  renderAttLog();
-  showToast(shift==='day'?'☀️ Day shift set':'🌙 Night shift set');
-}
-
-function saveAttOT(empId,empName,dateStr){
-  const ot=parseFloat(document.getElementById('ot-hrs-input')?.value)||0;
-  let log=attendanceLogs.find(l=>(l.username===empId||l.name===empName)&&l.date===dateStr);
-  if(!log){
-    const emp=employees.find(e=>e.id===empId);
-    attendanceLogs.push({username:empId,name:empName,site:emp?.site||'—',date:dateStr,time:'00:00',type:'check-in',method:'manual',shift:'day',overtime:ot});
-  } else {
-    log.overtime=ot;
-  }
-  saveDB();
-  document.getElementById('att-opts-wrap')?.remove();
-  renderAttLog();
-  showToast('✅ OT saved: '+ot+' hours');
-}
-
 function toggleAtt(empId,empName,dateStr,isPresent){
   if(isPresent){
     const idx=attendanceLogs.findIndex(l=>(l.username===empId||l.name===empName)&&l.date===dateStr);
@@ -2648,69 +2590,15 @@ function toggleAtt(empId,empName,dateStr,isPresent){
   saveDB();renderAttLog();
 }
 
-function regenerateAllReports(){
-  if(!confirm('Delete and regenerate all monthly reports?'))return;
-  savedReports=savedReports.filter(r=>!r.autoGenerated);
-  saveDB();renderSavedReports();
-
-  // Find all unique month-year combos from attendance logs
-  const monthsFound=new Set();
-  attendanceLogs.forEach(l=>{
-    if(!l.date)return;
-    const d=new Date(l.date);
-    if(isNaN(d))return;
-    const key=(d.getMonth()+1)+'-'+d.getFullYear();
-    monthsFound.add(key);
-  });
-
-  const today=new Date();
-  const curMonth=today.getMonth()+1;
-  const curYear=today.getFullYear();
-
-  if(monthsFound.size===0){
-    showToast('⚠️ No attendance logs found to generate reports!');
-    return;
-  }
-
-  let count=0;
-  monthsFound.forEach(key=>{
-    const [m,y]=[parseInt(key.split('-')[0]),parseInt(key.split('-')[1])];
-    // Skip current month
-    if(y===curYear&&m===curMonth)return;
-    _generateMonthReport(m,y);
-    count++;
-  });
-
-  if(count>0)showToast('✅ '+count+' report(s) generated!');
-  else showToast('⚠️ No past months found in attendance logs.');
-}
-
 function autoGenerateMonthlyReport(){
   const today=new Date();
-  const curMonth=today.getMonth()+1;
-  const curYear=today.getFullYear();
-  const months=['','January','February','March','April','May','June','July','August','September','October','November','December'];
-  // Generate for all past months that have logs but no saved report
-  for(let y=2025;y<=curYear;y++){
-    for(let m=1;m<=12;m++){
-      if(y===curYear&&m>=curMonth)continue;// skip current and future months
-      const label=months[m]+'-'+y;
-      if(savedReports.find(r=>r.label===label))continue;
-      const hasLogs=attendanceLogs.some(l=>{
-        if(!l.date)return false;
-        const d=new Date(l.date);
-        return d.getMonth()+1===m&&d.getFullYear()===y;
-      });
-      if(!hasLogs)continue;
-      _generateMonthReport(m,y);
-    }
-  }
-}
-
-function _generateMonthReport(prevMonth,prevYear){
+  if(today.getDate()!==1)return;// only on 1st of month
+  const prev=new Date(today.getFullYear(),today.getMonth()-1,1);
+  const prevMonth=prev.getMonth()+1;
+  const prevYear=prev.getFullYear();
   const months=['','January','February','March','April','May','June','July','August','September','October','November','December'];
   const label=months[prevMonth]+'-'+prevYear;
-  const today=new Date();
+  if(savedReports.find(r=>r.label===label))return;// already saved
   const daysInMonth=new Date(prevYear,prevMonth,0).getDate();
   const days=Array.from({length:daysInMonth},(_,i)=>i+1);
   const monthLogs=attendanceLogs.filter(l=>{
@@ -2721,29 +2609,23 @@ function _generateMonthReport(prevMonth,prevYear){
   const empIdsWithLogs=new Set(monthLogs.map(l=>l.username));
   const currentEmps=employees.filter(e=>e.status==='Current'||!e.status||empIdsWithLogs.has(e.id));
   let tableRows=currentEmps.map(e=>{
-    let present=0,ot=0;
+    let present=0;
     const cells=days.map(d=>{
       const dateStr=prevYear+'-'+String(prevMonth).padStart(2,'0')+'-'+String(d).padStart(2,'0');
       const log=monthLogs.find(l=>(l.username===e.id||l.name===e.name)&&l.date===dateStr);
-      if(log){
-        present++;
-        if(log.overtime)ot+=parseFloat(log.overtime)||0;
-        const isNight=log.shift==='night';
-        return`<td style="background:${isNight?'#EDE9FE':'#DCFCE7'};color:${isNight?'#6D28D9':'#16A34A'};text-align:center;font-weight:700;padding:3px;">${isNight?'N':'P'}</td>`;
-      }
+      if(log){present++;return`<td style="background:#DCFCE7;color:#16A34A;text-align:center;font-weight:700;padding:3px;">P</td>`;}
       return`<td style="background:#FEE2E2;color:#DC2626;text-align:center;font-weight:700;padding:3px;">A</td>`;
     }).join('');
-    const monthlySal=parseFloat(e.rawSalary)||parseFloat((e.salary||'').replace(/[₹,]/g,''))||0;
-    const perDay=daysInMonth>0?monthlySal/daysInMonth:0;
-    const otPay=ot>0?Math.round((ot/12)*perDay):0;
-    const earned=Math.round(perDay*present)+otPay;
-    return`<tr><td style="padding:5px 8px;font-weight:600;">${e.name}<div style="font-size:9px;color:#666;">${e.site||'—'}</div></td>${cells}<td style="text-align:center;font-weight:700;color:#16A34A;padding:3px;">${present}</td><td style="text-align:center;font-weight:700;color:#DC2626;padding:3px;">${daysInMonth-present}</td><td style="text-align:center;font-size:10px;color:#7C3AED;padding:3px;">${ot>0?ot+'h':'—'}</td><td style="text-align:center;font-weight:700;color:#1D4ED8;padding:5px;">₹${earned.toLocaleString('en-IN')}</td></tr>`;
+    const monthlySal=parseFloat(e.salary)||0;
+    const perDay=monthlySal/daysInMonth;
+    const earned=Math.round(perDay*present);
+    return`<tr><td style="padding:5px 8px;font-weight:600;">${e.name}<div style="font-size:9px;color:#666;">${e.site||'—'}</div></td>${cells}<td style="text-align:center;font-weight:700;color:#16A34A;padding:3px;">${present}</td><td style="text-align:center;font-weight:700;color:#DC2626;padding:3px;">${daysInMonth-present}</td><td style="text-align:center;font-weight:700;color:#1D4ED8;padding:5px;">₹${earned.toLocaleString('en-IN')}</td></tr>`;
   }).join('');
-  const html=`<div style="font-size:10px;margin-bottom:6px;">P=Day &nbsp; <span style="color:#6D28D9;">N=Night</span> &nbsp; A=Absent</div><table style="border-collapse:collapse;font-size:11px;width:100%;"><thead><tr style="background:#FF6B00;color:#fff;"><th style="padding:6px 8px;text-align:left;">Employee</th>${days.map(d=>`<th style="padding:4px;text-align:center;">${d}</th>`).join('')}<th>P</th><th>A</th><th>OT</th><th style="padding:6px;">Salary</th></tr></thead><tbody>${tableRows}</tbody></table>`;
+  const html=`<table style="border-collapse:collapse;font-size:11px;width:100%;"><thead><tr style="background:#FF6B00;color:#fff;"><th style="padding:6px 8px;text-align:left;">Employee</th>${days.map(d=>`<th style="padding:4px;text-align:center;">${d}</th>`).join('')}<th style="padding:4px;">P</th><th style="padding:4px;">A</th><th style="padding:6px;">Salary Earned</th></tr></thead><tbody>${tableRows}</tbody></table>`;
   const summary={guards:currentEmps.length,days:daysInMonth,present:monthLogs.length};
   savedReports.unshift({label,month:prevMonth,year:prevYear,site:'All',summary,html,savedAt:today.toLocaleDateString('en-IN'),autoGenerated:true});
   saveDB();renderSavedReports();
-  showToast('📋 Report saved: '+label);
+  showToast('📋 Monthly report auto-saved: '+label);
 }
 
 function markAllPresentToday(){
@@ -2848,14 +2730,8 @@ function renderAttLog(){
             const future=new Date(dateStr)>now;
             if(future)return`<td style="padding:3px;text-align:center;background:#f9f9f9;color:#ccc;">·</td>`;
             const logIdx=attendanceLogs.findIndex(l=>(l.username===e.id||l.name===e.name)&&l.date===dateStr);
-            if(logIdx>=0){
-              present++;
-              const log=attendanceLogs[logIdx];
-              const isNight=log.shift==='night';
-              const hasOT=log.overtime>0;
-              return`<td onclick="showAttOptions('${e.id}','${e.name}','${dateStr}',true)" style="padding:3px;text-align:center;background:${isNight?'#EDE9FE':'#DCFCE7'};color:${isNight?'#6D28D9':'#16A34A'};font-weight:700;cursor:pointer;font-size:10px;" title="${isNight?'Night':'Day'} shift${hasOT?' | OT:'+log.overtime+'h':''} — Click to edit">${isNight?'N':'P'}${hasOT?'⭐':''}</td>`;
-            }
-            return`<td onclick="showAttOptions('${e.id}','${e.name}','${dateStr}',false)" style="padding:3px;text-align:center;background:#FEE2E2;color:#DC2626;font-weight:700;cursor:pointer;" title="Click to mark Present or set shift">A</td>`;
+            if(logIdx>=0){present++;return`<td onclick="toggleAtt('${e.id}','${e.name}','${dateStr}',true)" style="padding:3px;text-align:center;background:#DCFCE7;color:#16A34A;font-weight:700;cursor:pointer;" title="Click to mark Absent">P</td>`;}
+            return`<td onclick="toggleAtt('${e.id}','${e.name}','${dateStr}',false)" style="padding:3px;text-align:center;background:#FEE2E2;color:#DC2626;font-weight:700;cursor:pointer;" title="Click to mark Present">A</td>`;
           }).join('');
           const pastDays=days.filter(d=>new Date(curYear+'-'+String(curMonth).padStart(2,'0')+'-'+String(d).padStart(2,'0'))<=now).length;
           const absent=pastDays-present;
@@ -5209,7 +5085,7 @@ saveDB = function(){         // patch global directly
 window.saveDB = saveDB;      // keep window.saveDB in sync
 
 // ── START FIREBASE ───────────────────────────────────
-(function startFirebase(){
+function initFirebaseConnection(){
   if(typeof firebase==='undefined'){
     fbSetStatus('❌ Firebase SDK not loaded. Check internet.','err');
     return;
@@ -5219,18 +5095,37 @@ window.saveDB = saveDB;      // keep window.saveDB in sync
     fbDb = firebase.database(app);
     fbRef = fbDb.ref('bsms_data');
 
-    // Connection state
+    // Connection monitor with auto-reconnect
     fbDb.ref('.info/connected').on('value', snap=>{
-      fbSetLive(snap.val()===true && fbReady);
-      if(!snap.val()) fbSetStatus('⚠️ Offline — changes saved locally, will sync when back online.','warn');
+      const connected=snap.val()===true;
+      fbSetLive(connected && fbReady);
+      if(!connected){
+        fbSetStatus('⚠️ Offline — will auto-reconnect...','warn');
+      }
     });
 
-    // Auth
-    firebase.auth(app).signInWithEmailAndPassword(FB_EMAIL, FB_PASSWORD)
+    // Keepalive every 4 minutes to prevent silent disconnect
+    setInterval(()=>{
+      if(fbRef && fbReady){
+        fbDb.ref('.info/connected').once('value').then(snap=>{
+          if(!snap.val()){ fbReady=false; initFirebaseConnection(); }
+        }).catch(()=>{fbReady=false; initFirebaseConnection();});
+      }
+    }, 4*60*1000);
+
+    // Auth with token refresh
+    const authInstance=firebase.auth(app);
+    authInstance.signInWithEmailAndPassword(FB_EMAIL, FB_PASSWORD)
       .then(()=>{
         fbReady = true;
         fbSetStatus('✅ Securely connected — all changes sync instantly across all devices.','ok');
         fbSetLive(true);
+
+        // Refresh auth token every 55 minutes before expiry
+        setInterval(()=>{
+          authInstance.currentUser?.getIdToken(true)
+            .catch(()=>{fbReady=false; initFirebaseConnection();});
+        }, 55*60*1000);
 
         // Step 1: Load initial data from Firebase only if newer than local
         fbRef.once('value').then(snap=>{
@@ -5274,8 +5169,10 @@ window.saveDB = saveDB;      // keep window.saveDB in sync
     fbSetStatus('❌ Firebase error: '+e.message,'err');
     console.error('Firebase start error:',e);
   }
-})();
+}
 
+// Start Firebase on load
+initFirebaseConnection();
 </script>
 
 <!-- ═══ UNIFORM SCREEN ═══ -->
