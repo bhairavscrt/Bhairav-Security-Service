@@ -2660,8 +2660,8 @@ function autoGenerateMonthlyReport(){
       if(log){present++;return`<td style="background:#DCFCE7;color:#16A34A;text-align:center;font-weight:700;padding:3px;">P</td>`;}
       return`<td style="background:#FEE2E2;color:#DC2626;text-align:center;font-weight:700;padding:3px;">A</td>`;
     }).join('');
-    const monthlySal=parseFloat(e.salary)||0;
-    const perDay=monthlySal/daysInMonth;
+    const monthlySal=parseFloat(e.rawSalary)||parseFloat((e.salary||'').replace(/[₹,]/g,''))||0;
+    const perDay=daysInMonth>0?monthlySal/daysInMonth:0;
     const earned=Math.round(perDay*present);
     return`<tr><td style="padding:5px 8px;font-weight:600;">${e.name}<div style="font-size:9px;color:#666;">${e.site||'—'}</div></td>${cells}<td style="text-align:center;font-weight:700;color:#16A34A;padding:3px;">${present}</td><td style="text-align:center;font-weight:700;color:#DC2626;padding:3px;">${daysInMonth-present}</td><td style="text-align:center;font-weight:700;color:#1D4ED8;padding:5px;">₹${earned.toLocaleString('en-IN')}</td></tr>`;
   }).join('');
