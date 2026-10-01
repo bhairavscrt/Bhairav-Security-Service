@@ -1325,6 +1325,7 @@ tbody td{padding:9px 8px;color:var(--text);vertical-align:middle;}
       <div class="form-grid">
         <div class="form-field full"><label>Month *</label><input id="sm-month" placeholder="e.g. April 2026"/></div>
         <div class="form-field"><label>💰 Sales Received (₹)</label><input id="sm-sales" type="number" placeholder="0"/></div>
+        <div class="form-field"><label>📉 TDS Deducted (₹)</label><input id="sm-tds" type="number" placeholder="0"/></div>
         <div class="form-field"><label>💼 Salary Paid (₹)</label><input id="sm-basic" type="number" placeholder="0"/></div>
         <div class="form-field"><label>🧾 GST Collected (₹)</label><input id="sm-gst-col" type="number" placeholder="0"/></div>
         <div class="form-field"><label>🧾 GST Paid to Govt (₹)</label><input id="sm-gst" type="number" placeholder="0"/></div>
@@ -2858,7 +2859,9 @@ function renderSalList(){
     const other=parseFloat(s.other)||0;
     const totalExp=salary+gst+pf+esic+other;
     const monthSales=parseFloat(s.sales)||0;
-    const profit=monthSales-totalExp;
+    const tds=parseFloat(s.tds)||0;
+    const netSales=monthSales-tds;
+    const profit=netSales-totalExp;
     return `<div class="card" style="margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
         <div style="font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;">📅 ${s.month}</div>        <div style="display:flex;gap:6px;">
@@ -2869,6 +2872,8 @@ function renderSalList(){
       <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:4px;">INCOME</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin-bottom:8px;">
         <div style="display:flex;justify-content:space-between;padding:5px 8px;background:#F0FDF4;border-radius:8px;"><span>💰 Sales</span><span style="font-weight:700;color:#16A34A;">₹${monthSales.toLocaleString('en-IN')}</span></div>
+        ${tds>0?`<div style="display:flex;justify-content:space-between;padding:5px 8px;background:#FEE2E2;border-radius:8px;"><span>📉 TDS Deducted</span><span style="font-weight:700;color:#DC2626;">-₹${tds.toLocaleString('en-IN')}</span></div>`:''}
+        ${tds>0?`<div style="display:flex;justify-content:space-between;padding:5px 8px;background:#F0FDF4;border-radius:8px;"><span>💵 Net Received</span><span style="font-weight:700;color:#16A34A;">₹${netSales.toLocaleString('en-IN')}</span></div>`:''}
         ${gstCol>0?`<div style="display:flex;justify-content:space-between;padding:5px 8px;background:#F0FDF4;border-radius:8px;"><span>🧾 GST Collected</span><span style="font-weight:700;color:#16A34A;">₹${gstCol.toLocaleString('en-IN')}</span></div>`:''}
       </div>
       <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:4px;">EXPENSES</div>
@@ -2894,6 +2899,7 @@ function editSalary(i){
   const s=salaries[i];
   document.getElementById('sm-month').value=s.month||'';
   document.getElementById('sm-sales').value=s.sales||'';
+  document.getElementById('sm-tds').value=s.tds||'';
   document.getElementById('sm-basic').value=s.basic||'';
   document.getElementById('sm-gst-col').value=s.gstCol||'';
   document.getElementById('sm-gst').value=s.gst||'';
@@ -2913,12 +2919,12 @@ function deleteSalary(i){
 function saveSalary(){
   const month=document.getElementById('sm-month').value.trim();
   if(!month){document.getElementById('sm-err').textContent='Month is required.';return;}
-  const rec={month,sales:document.getElementById('sm-sales').value,basic:document.getElementById('sm-basic').value,gstCol:document.getElementById('sm-gst-col').value,gst:document.getElementById('sm-gst').value,pf:document.getElementById('sm-pf').value,esic:document.getElementById('sm-esic').value,other:document.getElementById('sm-other').value};
+  const rec={month,sales:document.getElementById('sm-sales').value,tds:document.getElementById('sm-tds').value,basic:document.getElementById('sm-basic').value,gstCol:document.getElementById('sm-gst-col').value,gst:document.getElementById('sm-gst').value,pf:document.getElementById('sm-pf').value,esic:document.getElementById('sm-esic').value,other:document.getElementById('sm-other').value};
   const editIdx=document.getElementById('sal-modal').dataset.editIdx;
   if(editIdx!==undefined&&editIdx!=='')salaries[parseInt(editIdx)]=rec;
   else salaries.push(rec);
   document.getElementById('sal-modal').classList.add('hidden');
-  ['sm-month','sm-sales','sm-basic','sm-gst-col','sm-gst','sm-pf','sm-esic','sm-other'].forEach(id=>document.getElementById(id).value='');
+  ['sm-month','sm-sales','sm-tds','sm-basic','sm-gst-col','sm-gst','sm-pf','sm-esic','sm-other'].forEach(id=>document.getElementById(id).value='');
   renderSalList();updateDashboard();saveDB();showToast('✅ Salary record saved!');
 }
 
